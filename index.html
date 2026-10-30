@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Tìm Quanh Đây</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="khung" id="khungChinh">
+
+  <header class="dauTrang">
+    <h1>📍 Tìm Quanh Đây</h1>
+    <p class="phuDe">Tìm người ở gần bạn — theo giới tính, độ tuổi và khoảng cách</p>
+  </header>
+
+  <!-- ===== TAB CÁ NHÂN: tài khoản & hồ sơ (v3) + cài đặt riêng tư (v4) ===== -->
+  <div id="tabCaNhan" class="tabNoiDung">
+
+  <!-- ===== TÀI KHOẢN & HỒ SƠ ===== -->
+  <section class="the" id="theHoSo">
+    <h2>👤 Tài khoản &amp; hồ sơ của tôi</h2>
+
+    <!-- Màn hình 1: nhập số điện thoại -->
+    <div id="manDienThoai">
+      <label class="nhan" for="inpSdt">Số điện thoại của bạn</label>
+      <input id="inpSdt" type="tel" inputmode="tel" autocomplete="tel" maxlength="15" placeholder="Ví dụ: 0912 345 678">
+      <p class="moTa">Đăng ký / đăng nhập bằng số điện thoại. Chỉ nhận <strong>số di động Việt Nam</strong> (10 số, đầu 03 / 05 / 07 / 08 / 09) — không nhận số bàn, số nước ngoài, số tổng đài 1900 / 1800.</p>
+      <button type="button" id="btnNhanOTP" class="nutChinh">📩 Nhận mã OTP</button>
+      <p class="loi" id="loiSdt"></p>
+    </div>
+
+    <!-- Màn hình 2: nhập mã OTP -->
+    <div id="manOTP" class="an">
+      <p class="nhanDemo" id="bannerMaDemo">🧪 Mã demo: <span class="maHien" id="maDemoHien">------</span> — bản thật mã này sẽ gửi qua tin nhắn SMS</p>
+      <p class="moTa">Nhập mã 6 số đã gửi tới số <strong id="sdtChoXacThuc"></strong>. Mã có hiệu lực trong <strong>5 phút</strong>, nhập sai 5 lần sẽ bị khóa.</p>
+      <label class="nhan" for="inpOTP">Mã OTP</label>
+      <input id="inpOTP" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="• • • • • •">
+      <button type="button" id="btnXacNhanOTP" class="nutChinh">✅ Xác nhận</button>
+      <p class="loi" id="loiOTP"></p>
+      <div class="hangGuiLai">
+        <button type="button" id="btnGuiLai" class="nutPhu nho" disabled>Gửi lại mã</button>
+        <button type="button" id="btnDoiSo" class="nutPhu nho">← Đổi số điện thoại</button>
+      </div>
+    </div>
+
+    <!-- Khu sau đăng nhập: hồ sơ + công tắc hiển thị -->
+    <div id="khuSauDangNhap" class="an">
+
+      <!-- Form tạo / sửa hồ sơ -->
+      <form id="formHoSo" autocomplete="off">
+        <label class="nhan" for="inpNick">Nick (tên hiển thị)</label>
+        <input id="inpNick" type="text" maxlength="24" placeholder="Ví dụ: Phúc Cát Hải">
+
+        <span class="nhan">Giới tính</span>
+        <div class="chonGioi" role="group" aria-label="Giới tính của bạn">
+          <label class="oGioi"><input type="radio" name="gioiMe" value="nam"> 🧑 Nam</label>
+          <label class="oGioi"><input type="radio" name="gioiMe" value="nu"> 👩 Nữ</label>
+        </div>
+
+        <label class="nhan" for="inpTuoi">Tuổi</label>
+        <input id="inpTuoi" type="number" inputmode="numeric" min="18" max="99" placeholder="Ví dụ: 40">
+
+        <span class="nhan">Chọn 1 emoji làm ảnh đại diện</span>
+        <div id="chonEmoji" class="luoiEmoji"></div>
+
+        <button type="submit" id="btnLuuHoSo" class="nutChinh">💾 Lưu hồ sơ</button>
+        <p class="loi" id="loiForm"></p>
+      </form>
+
+      <!-- Thẻ hồ sơ đã lưu -->
+      <div id="tomTatHoSo" class="an">
+        <div class="hangHoSo">
+          <span id="avatarMe" class="avatarLon">😀</span>
+          <div>
+            <p id="loiChao" class="loiChao">Xin chào!</p>
+            <p id="thongTinMe" class="moTa"></p>
+            <p id="sdtMe" class="moTa"></p>
+          </div>
+        </div>
+        <button type="button" id="btnSuaHoSo" class="nutPhu">✏️ Sửa hồ sơ</button>
+        <button type="button" id="btnDangXuat" class="nutPhu nutDangXuat">🚪 Đăng xuất</button>
+      </div>
+
+      <div class="congTac">
+        <label class="hangCongTac" for="chkHienThi">
+          <input type="checkbox" id="chkHienThi" checked>
+          <span><strong>Cho phép người khác tìm thấy tôi</strong></span>
+        </label>
+        <p class="giaiThich">Chỉ người cài app này và bật mục này mới xuất hiện trong kết quả tìm của người khác. Tắt đi là bạn ẩn mình, vẫn tìm được người khác.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===== V4: CÀI ĐẶT RIÊNG TƯ + DANH SÁCH CHẶN (chỉ chế độ máy chủ) ===== -->
+  <section class="the" id="khuRiengTu">
+    <h2>🔒 Cài đặt riêng tư</h2>
+
+    <div class="congTac khongVienTren">
+      <label class="hangCongTac" for="chkTimBangSDT">
+        <input type="checkbox" id="chkTimBangSDT" checked>
+        <span><strong>Cho phép tìm tôi bằng số điện thoại</strong></span>
+      </label>
+      <p class="giaiThich">Bật: ai biết số của bạn, nhập vào ô tìm trong app sẽ thấy nick của bạn để kết bạn. Tắt: dù biết số, họ tìm cũng không ra bạn.</p>
+    </div>
+
+    <div class="congTac">
+      <label class="hangCongTac" for="chkLaNhanTin">
+        <input type="checkbox" id="chkLaNhanTin">
+        <span><strong>Cho phép người lạ nhắn tin</strong></span>
+      </label>
+      <p class="giaiThich">Bật: người chưa kết bạn cũng nhắn tin cho bạn được. Tắt: chỉ bạn bè mới nhắn được.</p>
+    </div>
+
+    <div class="congTac">
+      <label class="hangCongTac" for="chkLaGoi">
+        <input type="checkbox" id="chkLaGoi">
+        <span><strong>Cho phép người lạ gọi</strong></span>
+      </label>
+      <p class="giaiThich">Cài đặt này lưu sẵn cho tính năng gọi thoại / gọi video (sẽ có ở bản sau). Hiện tại chưa gọi được trong app.</p>
+    </div>
+
+    <h3 class="tieuDeCon">🚫 Danh sách chặn</h3>
+    <div id="dsChanCaNhan" class="danhSach"></div>
+    <p class="goiY" id="trongChan">Bạn chưa chặn ai.</p>
+  </section>
+
+  <!-- ===== V4.1: GÓI VIP (chỉ chế độ máy chủ) ===== -->
+  <section class="the" id="mucVip">
+    <h2>⭐ Gói VIP</h2>
+    <p class="trangThai" id="trangThaiVip">Đang dùng bản miễn phí.</p>
+    <p class="moTa">VIP giúp bạn tìm quanh đây <strong>không giới hạn số hồ sơ</strong>, bán kính tới <strong>20 km</strong>, nhắn tin được cho người lạ và được <strong>ưu tiên hiển thị</strong> trong kết quả tìm của người khác. Đăng ký miễn phí 100% — chỉ trả tiền khi nâng VIP, ngay trong app này, không qua cửa hàng ứng dụng.</p>
+    <div id="dsGoiVip" class="dsGoiVip"></div>
+
+    <div id="panelThanhToanVip" class="panelThanhToan an">
+      <h3 class="tieuDeCon">💳 Thanh toán chuyển khoản</h3>
+      <p class="moTa">Gói: <strong id="ttTenGoi"></strong> · Số tiền cần chuyển: <strong id="ttSoTien"></strong></p>
+      <p class="moTa">Ngân hàng: <strong id="ttNganHang"></strong><br>
+      Số tài khoản: <strong id="ttSoTk"></strong><br>
+      Chủ tài khoản: <strong id="ttChuTk"></strong></p>
+      <p class="moTa">Nội dung chuyển khoản — ghi đúng mã đơn này:</p>
+      <p class="maDonLon" id="ttMaDon"></p>
+      <p class="giaiThich" id="ttGhiChu"></p>
+      <p class="moTa"><strong>Chuyển khoản xong, gói sẽ được kích hoạt sau khi chủ app xác nhận tiền về.</strong> Bạn cứ dùng app bình thường, VIP sẽ tự bật khi đơn được duyệt.</p>
+    </div>
+
+    <button type="button" id="btnDonCuaToi" class="nutPhu">🧾 Xem đơn của tôi</button>
+    <div id="dsDonVip" class="danhSach"></div>
+    <p class="goiY an" id="trongDonVip">Bạn chưa có đơn VIP nào.</p>
+  </section>
+
+  </div><!-- /tabCaNhan -->
+
+  <!-- ===== TAB KHÁM PHÁ: tìm quanh đây (v3) + lưới tiện ích (v4) ===== -->
+  <div id="tabKhamPha" class="tabNoiDung">
+
+  <!-- ===== ĐỊNH VỊ + BỘ LỌC ===== -->
+  <section class="the">
+    <h2>🔎 Tìm quanh đây</h2>
+
+    <button type="button" id="btnDinhVi" class="nutLon">📍 Bật định vị &amp; Tìm quanh đây</button>
+    <p id="trangThaiViTri" class="trangThai">Chưa bật định vị. Bấm nút trên để dùng vị trí thật của bạn.</p>
+
+    <div class="boLoc">
+      <span class="nhan">Tìm giới tính</span>
+      <div class="doanChon" id="locGioi">
+        <button type="button" data-gt="nu">👩 Nữ</button>
+        <button type="button" data-gt="nam">🧑 Nam</button>
+        <button type="button" data-gt="tatca">Tất cả</button>
+      </div>
+
+      <div class="haiCot">
+        <div>
+          <label class="nhan" for="tuoiTu">Tuổi từ</label>
+          <input id="tuoiTu" type="number" inputmode="numeric" min="18" max="99" value="18">
+        </div>
+        <div>
+          <label class="nhan" for="tuoiDen">đến</label>
+          <input id="tuoiDen" type="number" inputmode="numeric" min="18" max="99" value="45">
+        </div>
+      </div>
+
+      <div class="haiCot">
+        <div>
+          <label class="nhan" for="kmTu">Cách từ (km)</label>
+          <input id="kmTu" type="number" inputmode="decimal" min="0" max="200" step="0.5" value="0">
+        </div>
+        <div>
+          <label class="nhan" for="kmDen">đến (km)</label>
+          <input id="kmDen" type="number" inputmode="decimal" min="0" max="200" step="0.5" value="20">
+        </div>
+      </div>
+      <input id="kmTruot" type="range" min="1" max="50" step="1" value="20" aria-label="Khoảng cách tối đa (km)">
+      <p class="moTa">Kéo thanh trượt để chỉnh nhanh ô "đến (km)": <strong><span id="kmTruotVal">20</span> km</strong></p>
+      <p class="moTa an" id="ghiChuKmFree">⭐ <strong>Bản miễn phí: tối đa 5 km</strong> — nâng gói VIP để tìm tới 20 km.</p>
+
+      <button type="button" id="btnTim" class="nutChinh">🔎 Tìm</button>
+    </div>
+  </section>
+
+  <!-- ===== KẾT QUẢ ===== -->
+  <section class="the">
+    <h2>💞 Kết quả quanh bạn</h2>
+    <p class="nhanDemo" id="nhanDemoKetQua">🧪 Hồ sơ mẫu (demo) — bản thật sẽ là người dùng thật tự đăng ký</p>
+    <div id="bannerHetLuot" class="nhanDemo an">Bạn đã xem hết 10 hồ sơ miễn phí hôm nay. Nâng cấp VIP để tìm không giới hạn. <button type="button" id="btnLenVip" class="nutChinh nho">⭐ Nâng cấp VIP</button></div>
+    <div id="ketQua" class="danhSach"></div>
+    <p id="goiYTrong" class="goiY an">Chưa thấy ai trong vùng lọc này. Thử nới rộng độ tuổi hoặc tăng khoảng cách "đến" lên rồi bấm Tìm lại nhé.</p>
+  </section>
+
+  <!-- ===== V4: LƯỚI TIỆN ÍCH (chỉ chế độ máy chủ) ===== -->
+  <section class="the" id="mucTienIch">
+    <h2>🧭 Tiện ích</h2>
+    <div class="luoiTienIch" id="luoiTienIch">
+      <button type="button" class="oTienIch" data-tienich="thoitiet"><span class="iconTienIch">🌦</span><span>Thời tiết</span></button>
+      <button type="button" class="oTienIch" data-tienich="tygia"><span class="iconTienIch">💱</span><span>Tỉ giá</span></button>
+      <button type="button" class="oTienIch" data-tienich="vang"><span class="iconTienIch">🥇</span><span>Giá vàng</span></button>
+      <button type="button" class="oTienIch" data-tienich="tintuc"><span class="iconTienIch">📰</span><span>Tin tức</span></button>
+      <a class="oTienIch" href="https://xskt.com.vn" target="_blank" rel="noopener"><span class="iconTienIch">🎰</span><span>Xổ số</span></a>
+      <a class="oTienIch" href="https://www.livescore.com" target="_blank" rel="noopener"><span class="iconTienIch">⚽</span><span>Bóng đá</span></a>
+      <a class="oTienIch" href="https://www.youtube.com" target="_blank" rel="noopener"><span class="iconTienIch">📺</span><span>YouTube</span></a>
+    </div>
+    <div id="chiTietTienIch" class="chiTietTienIch an"></div>
+  </section>
+
+  </div><!-- /tabKhamPha -->
+
+  <!-- ===== TAB DANH BẠ (v4) ===== -->
+  <div id="tabDanhBa" class="tabNoiDung an">
+    <section class="the">
+      <h2>🔍 Tìm bạn bằng số điện thoại</h2>
+      <label class="nhan" for="inpTimSdt">Số điện thoại người bạn muốn tìm</label>
+      <input id="inpTimSdt" type="tel" inputmode="tel" maxlength="15" placeholder="Ví dụ: 0987 654 321">
+      <p class="moTa">Nhập đúng số điện thoại của họ. Nếu họ có tài khoản và cho phép tìm bằng số điện thoại, bạn sẽ thấy nick của họ để kết bạn.</p>
+      <button type="button" id="btnTimSdt" class="nutChinh">🔍 Tìm</button>
+      <p class="loi" id="loiTimSdt"></p>
+      <div id="ketQuaTimSdt"></div>
+    </section>
+
+    <section class="the">
+      <h2>📩 Lời mời kết bạn</h2>
+      <div id="dsLoiMoi" class="danhSach"></div>
+      <p class="goiY" id="trongLoiMoi">Chưa có lời mời nào.</p>
+    </section>
+
+    <section class="the">
+      <h2>👥 Bạn bè</h2>
+      <div id="dsBanBe" class="danhSach"></div>
+      <p class="goiY" id="trongBanBe">Chưa có bạn bè nào. Hãy tìm bạn bằng số điện thoại ở trên nhé.</p>
+      <button type="button" id="btnXemChan" class="nutPhu">🚫 Xem danh sách chặn</button>
+    </section>
+  </div>
+
+  <!-- ===== TAB TIN NHẮN (v4) ===== -->
+  <div id="tabTinNhan" class="tabNoiDung an">
+    <section class="the" id="khuDsTroChuyen">
+      <h2>💬 Tin nhắn</h2>
+      <div id="dsTroChuyen" class="danhSach"></div>
+      <p class="goiY" id="trongTroChuyen">Chưa có cuộc trò chuyện nào. Vào Danh bạ, chọn một người bạn để nhắn tin nhé.</p>
+    </section>
+
+    <section class="the an" id="manChat">
+      <div class="dauChat">
+        <button type="button" id="btnQuayLaiChat" class="nutPhu nho">←</button>
+        <span id="avatarChat" class="avatarChat">😀</span>
+        <div class="thongTinNguoi">
+          <p class="tenNguoi" id="tenChat"></p>
+          <p class="chiTietNguoi" id="sdtChat"></p>
+        </div>
+        <button type="button" id="btnChanTrongChat" class="nutPhu nho nutDangXuat">🚫 Chặn</button>
+      </div>
+      <div id="hopTinNhan" class="hopTinNhan"></div>
+      <div class="hangNhapChat">
+        <input id="inpTinNhan" type="text" maxlength="1000" placeholder="Nhập tin nhắn…" autocomplete="off">
+        <button type="button" id="btnGuiTin" class="nutChinh nutGuiTin">Gửi ➤</button>
+      </div>
+      <p class="loi" id="loiChat"></p>
+    </section>
+  </div>
+
+  <!-- ===== TAB TƯỜNG NHÀ (v4) ===== -->
+  <div id="tabTuongNha" class="tabNoiDung an">
+    <section class="the">
+      <h2>🏠 Tường nhà</h2>
+      <label class="nhan" for="inpBaiDang">Đăng bài mới</label>
+      <textarea id="inpBaiDang" rows="3" maxlength="500" placeholder="Bạn đang nghĩ gì? (tối đa 500 ký tự)"></textarea>
+      <button type="button" id="btnDangBai" class="nutChinh">📝 Đăng bài</button>
+      <p class="loi" id="loiBaiDang"></p>
+    </section>
+    <section class="the">
+      <div id="dsBaiDang" class="danhSach"></div>
+      <p class="goiY" id="trongBaiDang">Chưa có bài đăng nào của bạn và bạn bè.</p>
+    </section>
+  </div>
+
+  <footer class="chanTrang">
+    <p><strong>Bản mẫu xem thử</strong> — muốn chạy thật cho nhiều người cần máy chủ riêng và người dùng tự cài app, tự bật hiển thị vị trí. Mã OTP ở bản mẫu hiện ngay trên màn hình; bản thật sẽ gửi OTP qua SMS và kiểm tra số qua nhà mạng ở máy chủ.</p>
+  </footer>
+</div>
+
+<!-- ===== V4: THANH TAB ĐÁY (chỉ hiện ở chế độ máy chủ sau khi đăng nhập) ===== -->
+<nav id="thanhTab" class="thanhTab an" aria-label="Điều hướng chính">
+  <button type="button" class="tabBtn" data-tab="tinnhan"><span class="tabIcon">💬</span><span class="tabNhan">Tin nhắn</span></button>
+  <button type="button" class="tabBtn" data-tab="danhba"><span class="tabIcon">📇</span><span class="tabNhan">Danh bạ</span></button>
+  <button type="button" class="tabBtn" data-tab="khampha"><span class="tabIcon">🧭</span><span class="tabNhan">Khám phá</span></button>
+  <button type="button" class="tabBtn" data-tab="tuongnha"><span class="tabIcon">🏠</span><span class="tabNhan">Tường nhà</span></button>
+  <button type="button" class="tabBtn" data-tab="canhan"><span class="tabIcon">👤</span><span class="tabNhan">Cá nhân</span></button>
+</nav>
+
+<div id="toast" class="toast an" role="status"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
