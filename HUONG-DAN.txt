@@ -1,0 +1,23 @@
+HIALO V5 + V5.1 — BỘ FILE TỔNG HỢP (30/10/2026)
+================================================
+
+Gói này đã gồm CẢ V5 (gọi thoại/video + gửi ảnh/file/tin thoại)
+và V5.1 (tab Cá nhân kiểu Zalo: hCloud, hStyle, Ví QR, Tài liệu
+của tôi...). Chỉ có MỘT bộ file duy nhất, không phải tải 2 lần.
+
+ĐÃ XONG PHÍA MÁY CHỦ (không cần làm lại):
+- Máy chủ đã chạy bản này trên VPS, có HTTPS: https://api.hialo.vn
+
+BẠN CẦN LÀM — tải lên kho GitHub "Hialo":
+1. Upload files → chọn 3 file: index.html, script.js, style.css
+   (ghi đè bản cũ) → Commit changes.
+2. Tạo thư mục assets (Create new file, tên: assets/nhac-chuong-1.wav,
+   gõ 1 chữ vào nội dung, Commit) → mở thư mục assets → Upload files
+   → chọn 3 file .wav trong thư mục assets của gói này → Commit.
+3. Settings → Pages → Custom domain: gõ hialo.vn → Save
+   → chờ báo kiểm tra DNS thành công → tích Enforce HTTPS.
+4. Mở https://www.hialo.vn kiểm tra.
+
+TUYỆT ĐỐI KHÔNG tải thư mục "server" lên GitHub:
+- Đó chỉ là bản sao lưu mã máy chủ (đã chạy trên VPS rồi).
+- Kho GitHub là công khai — đưa mã máy chủ lên là lộ hết.
