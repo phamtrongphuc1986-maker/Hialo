@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Tìm Quanh Đây</title>
+<title>HIALO</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="khung" id="khungChinh">
 
   <header class="dauTrang">
-    <h1>📍 Tìm Quanh Đây</h1>
+    <h1>📍 HIALO</h1>
     <p class="phuDe">Tìm người ở gần bạn — theo giới tính, độ tuổi và khoảng cách</p>
   </header>
 
@@ -68,62 +68,383 @@
         <p class="loi" id="loiForm"></p>
       </form>
 
-      <!-- Thẻ hồ sơ đã lưu -->
-      <div id="tomTatHoSo" class="an">
-        <div class="hangHoSo">
-          <span id="avatarMe" class="avatarLon">😀</span>
-          <div>
-            <p id="loiChao" class="loiChao">Xin chào!</p>
-            <p id="thongTinMe" class="moTa"></p>
-            <p id="sdtMe" class="moTa"></p>
+      <!-- ===== V5.1: THẺ HỒ SƠ + MENU CÁ NHÂN (kiểu Zalo) ===== -->
+      <div id="hubCaNhan" class="an">
+        <div class="theHub">
+          <button type="button" id="btnCaiDatHub" class="nutBanhRang" title="Cài đặt" aria-label="Mở cài đặt">⚙️</button>
+          <div class="hangHoSo">
+            <span id="avatarMe" class="avatarLon">😀</span>
+            <div class="thongTinHub">
+              <p id="loiChao" class="loiChao">Xin chào!</p>
+              <button type="button" id="bongTrangThai" class="bongTrangThai">Trạng thái...</button>
+              <p id="thongTinMe" class="moTa"></p>
+              <p id="sdtMe" class="moTa"></p>
+            </div>
+          </div>
+          <div id="hopSuaTrangThai" class="an">
+            <input id="inpTrangThai" type="text" maxlength="60" placeholder="Trạng thái của bạn (tối đa 60 ký tự)">
+            <div class="hangHaiNut">
+              <button type="button" id="btnLuuTrangThai" class="nutChinh nho">💾 Lưu</button>
+              <button type="button" id="btnHuyTrangThai" class="nutPhu nho">Hủy</button>
+            </div>
           </div>
         </div>
-        <button type="button" id="btnSuaHoSo" class="nutPhu">✏️ Sửa hồ sơ</button>
-        <button type="button" id="btnDangXuat" class="nutPhu nutDangXuat">🚪 Đăng xuất</button>
+
+        <nav class="dsMenuCaNhan" aria-label="Menu cá nhân">
+          <button type="button" class="mucMenu" data-mo-trang="trangHCloud"><span class="iconMenu">☁️</span><span class="chuMenu"><strong>hCloud</strong><small>Không gian lưu trữ dữ liệu trên đám mây</small></span><span class="chevronMenu">›</span></button>
+          <button type="button" class="mucMenu" data-mo-trang="trangHStyle"><span class="iconMenu">🎨</span><span class="chuMenu"><strong>hStyle</strong><small>Hình nền và nhạc cho cuộc gọi Hialo</small></span><span class="chevronMenu">›</span></button>
+          <button type="button" class="mucMenu" data-mo-trang="trangTaiLieu"><span class="iconMenu">🔖</span><span class="chuMenu"><strong>Tài liệu của tôi</strong><small>Tin nhắn và tệp quan trọng bạn đã lưu</small></span><span class="chevronMenu">›</span></button>
+          <button type="button" class="mucMenu" data-mo-trang="trangDuLieu"><span class="iconMenu">💾</span><span class="chuMenu"><strong>Dữ liệu lưu trữ</strong><small>Dung lượng tệp bạn đã gửi</small></span><span class="chevronMenu">›</span></button>
+          <button type="button" class="mucMenu" data-mo-trang="trangViQR"><span class="iconMenu">🔳</span><span class="chuMenu"><strong>Ví QR</strong><small>Mã QR ngân hàng, ví điện tử của bạn</small></span><span class="chevronMenu">›</span></button>
+          <button type="button" class="mucMenu" data-mo-trang="trangTaiKhoan"><span class="iconMenu">🛡️</span><span class="chuMenu"><strong>Tài khoản và bảo mật</strong><small>Hồ sơ, khóa PIN, phiên đăng nhập</small></span><span class="chevronMenu">›</span></button>
+          <button type="button" class="mucMenu" data-mo-trang="trangRiengTu"><span class="iconMenu">🔒</span><span class="chuMenu"><strong>Quyền riêng tư</strong><small>Ai tìm thấy, nhắn tin và gọi cho bạn</small></span><span class="chevronMenu">›</span></button>
+        </nav>
       </div>
 
-      <div class="congTac">
-        <label class="hangCongTac" for="chkHienThi">
-          <input type="checkbox" id="chkHienThi" checked>
-          <span><strong>Cho phép người khác tìm thấy tôi</strong></span>
-        </label>
-        <p class="giaiThich">Chỉ người cài app này và bật mục này mới xuất hiện trong kết quả tìm của người khác. Tắt đi là bạn ẩn mình, vẫn tìm được người khác.</p>
+      <!-- ===== V5.1: TRANG CÀI ĐẶT ===== -->
+      <div class="trangCon an" id="trangCaiDat">
+        <div class="dauTrangCon">
+          <button type="button" class="nutPhu nho" data-quay-lai="hub">←</button>
+          <h3>Cài đặt</h3>
+        </div>
+        <nav class="dsMenuCaNhan" aria-label="Menu cài đặt">
+          <button type="button" class="mucMenu" data-mo-trang="trangCdTinNhan"><span class="iconMenu">💬</span><span class="chuMenu"><strong>Tin nhắn</strong><small>Cách gửi và hiển thị tin nhắn</small></span><span class="chevronMenu">›</span></button>
+          <button type="button" class="mucMenu" data-mo-trang="trangCdCuocGoi"><span class="iconMenu">📞</span><span class="chuMenu"><strong>Cuộc gọi</strong><small>Ai gọi được cho bạn, rung khi có cuộc gọi</small></span><span class="chevronMenu">›</span></button>
+          <button type="button" class="mucMenu" data-mo-trang="trangCdTuongNha"><span class="iconMenu">🏠</span><span class="chuMenu"><strong>Tường nhà</strong><small>Ai xem được tường nhà của bạn</small></span><span class="chevronMenu">›</span></button>
+          <button type="button" class="mucMenu" data-mo-trang="trangCdDanhBa"><span class="iconMenu">📇</span><span class="chuMenu"><strong>Danh bạ</strong><small>Tìm bạn bằng số điện thoại, cách sắp xếp</small></span><span class="chevronMenu">›</span></button>
+          <button type="button" class="mucMenu" data-mo-trang="trangGiaoDien"><span class="iconMenu">🎨</span><span class="chuMenu"><strong>Giao diện và ngôn ngữ</strong><small>Sáng / tối, ngôn ngữ hiển thị</small></span><span class="chevronMenu">›</span></button>
+          <button type="button" class="mucMenu" data-mo-trang="trangThongTin"><span class="iconMenu">ℹ️</span><span class="chuMenu"><strong>Thông tin về Hialo</strong><small>Phiên bản và giới thiệu ứng dụng</small></span><span class="chevronMenu">›</span></button>
+          <button type="button" class="mucMenu" data-mo-trang="trangHoTro"><span class="iconMenu">🆘</span><span class="chuMenu"><strong>Liên hệ hỗ trợ</strong><small>Email hỗ trợ và câu hỏi thường gặp</small></span><span class="chevronMenu">›</span></button>
+          <button type="button" class="mucMenu" id="btnChuyenTaiKhoan"><span class="iconMenu">🔄</span><span class="chuMenu"><strong>Chuyển tài khoản</strong><small>Đăng nhập bằng số điện thoại khác</small></span><span class="chevronMenu">›</span></button>
+        </nav>
+        <button type="button" id="btnDangXuat" class="nutDangXuatLon">Đăng xuất</button>
+      </div>
+
+      <!-- ===== V5.1: CÀI ĐẶT — TIN NHẮN ===== -->
+      <div class="trangCon an" id="trangCdTinNhan">
+        <div class="dauTrangCon">
+          <button type="button" class="nutPhu nho" data-quay-lai="trangCaiDat">←</button>
+          <h3>Tin nhắn</h3>
+        </div>
+        <div class="congTac khongVienTren">
+          <label class="hangCongTac" for="chkEnterGui">
+            <input type="checkbox" id="chkEnterGui" checked>
+            <span><strong>Nhấn Enter để gửi tin</strong></span>
+          </label>
+          <p class="giaiThich">Bật: gõ xong bấm phím Enter là gửi ngay. Tắt: phải bấm nút Gửi.</p>
+        </div>
+        <div class="congTac">
+          <label class="hangCongTac" for="chkHienGioTin">
+            <input type="checkbox" id="chkHienGioTin" checked>
+            <span><strong>Hiện giờ dưới mỗi tin nhắn</strong></span>
+          </label>
+          <p class="giaiThich">Tắt đi nếu muốn khung trò chuyện gọn hơn.</p>
+        </div>
+      </div>
+
+      <!-- ===== V5.1: CÀI ĐẶT — CUỘC GỌI ===== -->
+      <div class="trangCon an" id="trangCdCuocGoi">
+        <div class="dauTrangCon">
+          <button type="button" class="nutPhu nho" data-quay-lai="trangCaiDat">←</button>
+          <h3>Cuộc gọi</h3>
+        </div>
+        <div class="congTac khongVienTren">
+          <label class="hangCongTac" for="chkLaGoiCd">
+            <input type="checkbox" id="chkLaGoiCd">
+            <span><strong>Cho phép người lạ gọi</strong></span>
+          </label>
+          <p class="giaiThich">Bật: người chưa kết bạn cũng gọi thoại / gọi video cho bạn được. Tắt: chỉ bạn bè mới gọi được. Người đã bị chặn thì không bao giờ gọi được.</p>
+        </div>
+        <div class="congTac">
+          <label class="hangCongTac" for="chkRungKhiGoiDen">
+            <input type="checkbox" id="chkRungKhiGoiDen" checked>
+            <span><strong>Rung khi có cuộc gọi đến</strong></span>
+          </label>
+          <p class="giaiThich">Điện thoại sẽ rung theo nhịp khi có người gọi tới (nếu thiết bị hỗ trợ rung).</p>
+        </div>
+        <nav class="dsMenuCaNhan">
+          <button type="button" class="mucMenu" data-mo-trang="trangHStyle"><span class="iconMenu">🎨</span><span class="chuMenu"><strong>hStyle</strong><small>Hình nền và nhạc cho cuộc gọi Hialo</small></span><span class="chevronMenu">›</span></button>
+        </nav>
+      </div>
+
+      <!-- ===== V5.1: CÀI ĐẶT — TƯỜNG NHÀ ===== -->
+      <div class="trangCon an" id="trangCdTuongNha">
+        <div class="dauTrangCon">
+          <button type="button" class="nutPhu nho" data-quay-lai="trangCaiDat">←</button>
+          <h3>Tường nhà</h3>
+        </div>
+        <div class="congTac khongVienTren">
+          <label class="hangCongTac" for="chkTuongChiBanBe">
+            <input type="checkbox" id="chkTuongChiBanBe" checked>
+            <span><strong>Chỉ bạn bè xem được tường nhà của tôi</strong></span>
+          </label>
+          <p class="giaiThich">Bật: bài đăng của bạn chỉ bạn bè mới thấy. Tắt: tường nhà thành công khai — mọi người dùng Hialo đều thấy bài của bạn trong tab Tường nhà của họ.</p>
+        </div>
+        <div class="congTac">
+          <label class="hangCongTac" for="chkTuongThongBao">
+            <input type="checkbox" id="chkTuongThongBao">
+            <span><strong>Thông báo khi có tương tác trên tường</strong></span>
+          </label>
+          <p class="giaiThich">Cài đặt này được lưu sẵn; thông báo tương tác tường nhà sẽ có ở bản sau.</p>
+        </div>
+      </div>
+
+      <!-- ===== V5.1: CÀI ĐẶT — DANH BẠ ===== -->
+      <div class="trangCon an" id="trangCdDanhBa">
+        <div class="dauTrangCon">
+          <button type="button" class="nutPhu nho" data-quay-lai="trangCaiDat">←</button>
+          <h3>Danh bạ</h3>
+        </div>
+        <div class="congTac khongVienTren">
+          <label class="hangCongTac" for="chkTimBangSDTDanhBa">
+            <input type="checkbox" id="chkTimBangSDTDanhBa" checked>
+            <span><strong>Cho phép tìm tôi bằng số điện thoại</strong></span>
+          </label>
+          <p class="giaiThich">Bật: ai biết số của bạn, nhập vào ô tìm trong app sẽ thấy nick của bạn để kết bạn. Tắt: dù biết số, họ tìm cũng không ra bạn.</p>
+        </div>
+        <label class="nhan" for="selDanhBaSapXep">Sắp xếp danh sách bạn bè</label>
+        <select id="selDanhBaSapXep" class="chonSelect">
+          <option value="mac-dinh">Mặc định (thứ tự kết bạn)</option>
+          <option value="ten">Theo tên A → Z</option>
+        </select>
+      </div>
+
+      <!-- ===== V5.1: GIAO DIỆN VÀ NGÔN NGỮ ===== -->
+      <div class="trangCon an" id="trangGiaoDien">
+        <div class="dauTrangCon">
+          <button type="button" class="nutPhu nho" data-quay-lai="trangCaiDat">←</button>
+          <h3>Giao diện và ngôn ngữ</h3>
+        </div>
+        <span class="nhan">Giao diện</span>
+        <div class="chonGioi" role="group" aria-label="Chọn giao diện">
+          <label class="oGioi"><input type="radio" name="giaoDien" value="sang"> ☀️ Sáng</label>
+          <label class="oGioi"><input type="radio" name="giaoDien" value="toi"> 🌙 Tối</label>
+        </div>
+        <span class="nhan">Ngôn ngữ</span>
+        <p class="moTa">🇻🇳 Tiếng Việt — hiện tại Hialo chỉ có tiếng Việt.</p>
+      </div>
+
+      <!-- ===== V5.1: THÔNG TIN VỀ HIALO ===== -->
+      <div class="trangCon an" id="trangThongTin">
+        <div class="dauTrangCon">
+          <button type="button" class="nutPhu nho" data-quay-lai="trangCaiDat">←</button>
+          <h3>Thông tin về Hialo</h3>
+        </div>
+        <p class="tenAppLon">📍 HIALO</p>
+        <p class="moTa">Phiên bản: <strong>Hialo 5.1</strong></p>
+        <p class="moTa">Hialo là ứng dụng nhắn tin và kết bạn quanh đây, chạy ngay trên trình duyệt web, không cần cài đặt. Đăng ký miễn phí bằng số điện thoại, kết bạn, nhắn tin 1-1, gọi thoại và gọi video, gửi ảnh, tệp và tin nhắn thoại, đăng tường nhà và tìm người dùng Hialo ở gần bạn.</p>
+        <p class="moTa">Liên hệ: <strong>hotro@hialo.vn</strong></p>
+      </div>
+
+      <!-- ===== V5.1: LIÊN HỆ HỖ TRỢ ===== -->
+      <div class="trangCon an" id="trangHoTro">
+        <div class="dauTrangCon">
+          <button type="button" class="nutPhu nho" data-quay-lai="trangCaiDat">←</button>
+          <h3>Liên hệ hỗ trợ</h3>
+        </div>
+        <p class="moTa">Gặp trục trặc, bạn gửi email về <strong>hotro@hialo.vn</strong> kèm số điện thoại tài khoản và mô tả ngắn lỗi gặp phải — đội Hialo sẽ trả lời qua email.</p>
+        <h3 class="tieuDeCon">❓ Câu hỏi thường gặp</h3>
+        <details class="mucFaq">
+          <summary>Không nhận được mã OTP khi đăng nhập?</summary>
+          <p>Kiểm tra lại số điện thoại đã nhập đúng 10 số chưa, đợi hết 60 giây rồi bấm "Gửi lại mã". Sóng yếu hoặc điện thoại chặn tin từ đầu số lạ cũng làm mã chậm về — thử lại sau vài phút. Vẫn không được thì email hotro@hialo.vn.</p>
+        </details>
+        <details class="mucFaq">
+          <summary>Gọi mà không nghe tiếng / không thấy hình?</summary>
+          <p>Kiểm tra trình duyệt đã được cấp quyền micro và camera cho Hialo chưa (bấm biểu tượng ổ khóa trên thanh địa chỉ). Mạng yếu cũng làm mất tiếng — thử chuyển sang Wi-Fi hoặc chỗ sóng 4G mạnh hơn rồi gọi lại.</p>
+        </details>
+        <details class="mucFaq">
+          <summary>Gửi ảnh / tệp bị lỗi?</summary>
+          <p>Tệp gửi trong chat tối đa 200 MB. Ảnh nên là JPG hoặc PNG. Nếu đang tải mà mất mạng, tệp sẽ bị hủy giữa chừng — nối mạng ổn định rồi gửi lại.</p>
+        </details>
+        <details class="mucFaq">
+          <summary>Quên PIN khóa ứng dụng thì sao?</summary>
+          <p>PIN chỉ được lưu dạng mã băm một chiều nên Hialo không xem lại được PIN của bạn. Nếu quên, hãy email hotro@hialo.vn từ địa chỉ bạn đã dùng liên hệ, ghi số điện thoại tài khoản để được hỗ trợ tắt khóa PIN.</p>
+        </details>
+      </div>
+
+      <!-- ===== V5.1: QUYỀN RIÊNG TƯ (gom các công tắc riêng tư sẵn có) ===== -->
+      <div class="trangCon an" id="trangRiengTu">
+        <div class="dauTrangCon">
+          <button type="button" class="nutPhu nho" data-quay-lai="hub">←</button>
+          <h3>Quyền riêng tư</h3>
+        </div>
+        <div class="congTac khongVienTren">
+          <label class="hangCongTac" for="chkHienThi">
+            <input type="checkbox" id="chkHienThi" checked>
+            <span><strong>Cho phép người khác tìm thấy tôi quanh đây</strong></span>
+          </label>
+          <p class="giaiThich">Chỉ người cài app này và bật mục này mới xuất hiện trong kết quả tìm của người khác. Tắt đi là bạn ẩn mình, vẫn tìm được người khác.</p>
+        </div>
+        <div class="congTac">
+          <label class="hangCongTac" for="chkTimBangSDT">
+            <input type="checkbox" id="chkTimBangSDT" checked>
+            <span><strong>Cho phép tìm tôi bằng số điện thoại</strong></span>
+          </label>
+          <p class="giaiThich">Bật: ai biết số của bạn, nhập vào ô tìm trong app sẽ thấy nick của bạn để kết bạn. Tắt: dù biết số, họ tìm cũng không ra bạn.</p>
+        </div>
+        <div class="congTac">
+          <label class="hangCongTac" for="chkLaNhanTin">
+            <input type="checkbox" id="chkLaNhanTin">
+            <span><strong>Cho phép người lạ nhắn tin</strong></span>
+          </label>
+          <p class="giaiThich">Bật: người chưa kết bạn cũng nhắn tin cho bạn được. Tắt: chỉ bạn bè mới nhắn được.</p>
+        </div>
+        <div class="congTac">
+          <label class="hangCongTac" for="chkLaGoi">
+            <input type="checkbox" id="chkLaGoi">
+            <span><strong>Cho phép người lạ gọi</strong></span>
+          </label>
+          <p class="giaiThich">Bật: người chưa kết bạn cũng gọi thoại / gọi video cho bạn được. Tắt: chỉ bạn bè mới gọi được.</p>
+        </div>
+        <div class="congTac">
+          <label class="hangCongTac" for="chkTuongChiBanBeRt">
+            <input type="checkbox" id="chkTuongChiBanBeRt" checked>
+            <span><strong>Chỉ bạn bè xem được tường nhà của tôi</strong></span>
+          </label>
+          <p class="giaiThich">Tắt: tường nhà thành công khai, mọi người dùng Hialo đều thấy bài đăng của bạn.</p>
+        </div>
+        <h3 class="tieuDeCon">🚫 Danh sách chặn</h3>
+        <div id="dsChanCaNhan" class="danhSach"></div>
+        <p class="goiY" id="trongChan">Bạn chưa chặn ai.</p>
+      </div>
+
+      <!-- ===== V5.1: TÀI KHOẢN VÀ BẢO MẬT ===== -->
+      <div class="trangCon an" id="trangTaiKhoan">
+        <div class="dauTrangCon">
+          <button type="button" class="nutPhu nho" data-quay-lai="hub">←</button>
+          <h3>Tài khoản và bảo mật</h3>
+        </div>
+        <p class="moTa">Số điện thoại: <strong id="sdtTaiKhoan"></strong></p>
+        <button type="button" id="btnSuaHoSo" class="nutPhu">✏️ Sửa hồ sơ (tên hiển thị, ảnh đại diện)</button>
+
+        <h3 class="tieuDeCon">🔑 Khóa ứng dụng bằng PIN</h3>
+        <div id="khuPinChuaBat">
+          <p class="moTa">Đặt PIN gồm 4–6 chữ số. Khi bật, mỗi lần mở Hialo bạn phải nhập PIN mới vào được ứng dụng. PIN chỉ lưu trên máy chủ dạng mã băm — Hialo không biết PIN thật của bạn.</p>
+          <label class="nhan" for="inpPinMoi">PIN mới</label>
+          <input id="inpPinMoi" type="password" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="4–6 chữ số">
+          <label class="nhan" for="inpPinMoi2">Nhập lại PIN mới</label>
+          <input id="inpPinMoi2" type="password" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="Nhập lại cho chắc">
+          <button type="button" id="btnBatPin" class="nutChinh">🔒 Bật khóa PIN</button>
+        </div>
+        <div id="khuPinDaBat" class="an">
+          <p class="trangThai">✅ Khóa PIN đang bật cho tài khoản này.</p>
+          <label class="nhan" for="inpPinCu">PIN hiện tại</label>
+          <input id="inpPinCu" type="password" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="PIN đang dùng">
+          <label class="nhan" for="inpPinDoi">PIN mới (chỉ khi muốn đổi)</label>
+          <input id="inpPinDoi" type="password" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="4–6 chữ số">
+          <label class="nhan" for="inpPinDoi2">Nhập lại PIN mới</label>
+          <input id="inpPinDoi2" type="password" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="Nhập lại cho chắc">
+          <div class="hangHaiNut">
+            <button type="button" id="btnDoiPin" class="nutPhu nho">Đổi PIN</button>
+            <button type="button" id="btnTatPin" class="nutPhu nho nutDangXuat">Tắt khóa PIN</button>
+          </div>
+          <p class="giaiThich">Tắt khóa PIN dùng PIN ở ô "PIN hiện tại" phía trên.</p>
+        </div>
+        <p class="loi" id="loiPin"></p>
+
+        <h3 class="tieuDeCon">🖥️ Phiên đăng nhập</h3>
+        <p class="moTa" id="thongTinPhien">Đang tải thông tin phiên…</p>
+      </div>
+
+      <!-- ===== V5.1: TÀI LIỆU CỦA TÔI ===== -->
+      <div class="trangCon an" id="trangTaiLieu">
+        <div class="dauTrangCon">
+          <button type="button" class="nutPhu nho" data-quay-lai="hub">←</button>
+          <h3>Tài liệu của tôi</h3>
+        </div>
+        <p class="moTa">Những tin nhắn và tệp bạn đã bấm "💾 Lưu" trong các cuộc trò chuyện. Chỉ mình bạn xem được danh sách này.</p>
+        <div id="dsDaLuu" class="danhSach"></div>
+        <p class="goiY an" id="trongDaLuu">Bạn chưa lưu tin nhắn nào. Mở một cuộc trò chuyện, bấm nút "💾 Lưu" dưới tin nhắn cần giữ lại nhé.</p>
+      </div>
+
+      <!-- ===== V5.1: VÍ QR ===== -->
+      <div class="trangCon an" id="trangViQR">
+        <div class="dauTrangCon">
+          <button type="button" class="nutPhu nho" data-quay-lai="hub">←</button>
+          <h3>Ví QR</h3>
+        </div>
+        <label class="nhan" for="inpTenViQR">Tên mục (ví dụ: MoMo của tôi, Vietcombank)</label>
+        <input id="inpTenViQR" type="text" maxlength="60" placeholder="Tên để bạn nhận ra mục này">
+        <span class="nhan">Loại mục</span>
+        <div class="chonGioi" role="group" aria-label="Loại mục ví QR">
+          <label class="oGioi"><input type="radio" name="loaiViQR" value="anh" checked> 🖼️ Ảnh mã QR</label>
+          <label class="oGioi"><input type="radio" name="loaiViQR" value="noi-dung"> 🔤 Nội dung chữ</label>
+        </div>
+        <div id="hopQrAnh">
+          <p class="moTa">Chọn ảnh chụp mã QR (ngân hàng / MoMo / ZaloPay) từ điện thoại. Ảnh lưu riêng trên máy chủ, chỉ mình bạn xem được.</p>
+          <button type="button" id="btnChonAnhViQR" class="nutPhu">📷 Chọn ảnh QR</button>
+          <span id="tenAnhViQR" class="moTa"></span>
+          <input type="file" id="inpAnhViQR" accept="image/*" class="an">
+        </div>
+        <div id="hopQrNoiDung" class="an">
+          <label class="nhan" for="inpNoiDungViQR">Nội dung (số tài khoản, đường link, ghi chú…)</label>
+          <textarea id="inpNoiDungViQR" rows="3" maxlength="500" placeholder="Ví dụ: STK 123456789 — Ngân hàng ABC — NGUYEN VAN A"></textarea>
+        </div>
+        <button type="button" id="btnThemViQR" class="nutChinh">➕ Thêm vào Ví QR</button>
+        <p class="loi" id="loiViQR"></p>
+        <h3 class="tieuDeCon">🔳 Mục đã lưu trong ví</h3>
+        <div id="dsViQR" class="danhSach"></div>
+        <p class="goiY an" id="trongViQR">Ví QR đang trống.</p>
+      </div>
+
+      <!-- ===== V5.1: DỮ LIỆU LƯU TRỮ ===== -->
+      <div class="trangCon an" id="trangDuLieu">
+        <div class="dauTrangCon">
+          <button type="button" class="nutPhu nho" data-quay-lai="hub">←</button>
+          <h3>Dữ liệu lưu trữ</h3>
+        </div>
+        <p class="moTa" id="thongTinLuuTru">Đang tải dung lượng…</p>
+        <button type="button" id="btnXoaHetTep" class="nutPhu nutDangXuat">🗑️ Xóa tất cả tệp tôi đã gửi</button>
+        <p class="giaiThich">Xóa gồm: tệp bạn đã gửi trong tin nhắn, ảnh trong Ví QR và ảnh nền cuộc gọi. Tin nhắn chữ vẫn còn nguyên, phần tệp sẽ hiện "đã bị xóa". Đã xóa là không khôi phục lại được.</p>
+      </div>
+
+      <!-- ===== V5.1: hCloud ===== -->
+      <div class="trangCon an" id="trangHCloud">
+        <div class="dauTrangCon">
+          <button type="button" class="nutPhu nho" data-quay-lai="hub">←</button>
+          <h3>hCloud</h3>
+        </div>
+        <p class="moTa">Không gian lưu trữ dữ liệu trên đám mây — mọi ảnh, video, tệp và tin thoại bạn đã gửi hoặc nhận trong các cuộc trò chuyện. Trang này chỉ để xem và tải xuống.</p>
+        <h3 class="tieuDeCon" id="ttDamMayAnh">🖼️ Ảnh</h3>
+        <div id="damMayAnh" class="luoiDamMay"></div>
+        <h3 class="tieuDeCon" id="ttDamMayVideo">🎬 Video</h3>
+        <div id="damMayVideo" class="luoiDamMay"></div>
+        <h3 class="tieuDeCon" id="ttDamMayThoai">🎤 Tin nhắn thoại</h3>
+        <div id="damMayThoai" class="danhSach"></div>
+        <h3 class="tieuDeCon" id="ttDamMayTep">📎 Tệp khác</h3>
+        <div id="damMayTep" class="danhSach"></div>
+        <p class="goiY an" id="trongDamMay">Chưa có tệp nào trong các cuộc trò chuyện của bạn.</p>
+      </div>
+
+      <!-- ===== V5.1: hStyle ===== -->
+      <div class="trangCon an" id="trangHStyle">
+        <div class="dauTrangCon">
+          <button type="button" class="nutPhu nho" data-quay-lai="hub">←</button>
+          <h3>hStyle</h3>
+        </div>
+        <span class="nhan">Nhạc chuông cuộc gọi đến</span>
+        <div class="congTac khongVienTren">
+          <label class="hangCongTac"><input type="radio" name="nhacChuong" value="mac-dinh"> <span><strong>Mặc định</strong> — tiếng bíp sẵn có</span></label>
+          <label class="hangCongTac"><input type="radio" name="nhacChuong" value="chuong-1"> <span><strong>Chuông 1</strong> — chuông đôi</span></label>
+          <label class="hangCongTac"><input type="radio" name="nhacChuong" value="chuong-2"> <span><strong>Chuông 2</strong> — giai điệu lên</span></label>
+          <label class="hangCongTac"><input type="radio" name="nhacChuong" value="chuong-3"> <span><strong>Chuông 3</strong> — nhẹ nhàng</span></label>
+        </div>
+        <p class="giaiThich">Chọn một nhạc chuông là nghe thử ngay. Nhạc sẽ phát lặp lại khi có cuộc gọi đến, tới khi bạn nghe máy hoặc từ chối.</p>
+        <span class="nhan">Hình nền màn hình cuộc gọi đến</span>
+        <div class="luoiNenGoi" id="luoiNenGoi">
+          <button type="button" class="oNenGoi nenMacDinh" data-nen="mac-dinh"><span>Mặc định</span></button>
+          <button type="button" class="oNenGoi nen-grad-1" data-nen="grad-1"><span>Nền 1</span></button>
+          <button type="button" class="oNenGoi nen-grad-2" data-nen="grad-2"><span>Nền 2</span></button>
+          <button type="button" class="oNenGoi nen-grad-3" data-nen="grad-3"><span>Nền 3</span></button>
+          <button type="button" class="oNenGoi nen-grad-4" data-nen="grad-4"><span>Nền 4</span></button>
+          <button type="button" class="oNenGoi nenAnhNguoiDung" data-nen="anh"><span>🖼️ Ảnh của tôi</span></button>
+        </div>
+        <button type="button" id="btnChonAnhNenGoi" class="nutPhu">📷 Tải ảnh nền lên</button>
+        <input type="file" id="inpAnhNenGoi" accept="image/*" class="an">
+        <div id="xemTruocNenGoi" class="xemTruocNenGoi"><span>Xem trước nền cuộc gọi đến</span></div>
       </div>
 
     </div>
-  </section>
-
-  <!-- ===== V4: CÀI ĐẶT RIÊNG TƯ + DANH SÁCH CHẶN (chỉ chế độ máy chủ) ===== -->
-  <section class="the" id="khuRiengTu">
-    <h2>🔒 Cài đặt riêng tư</h2>
-
-    <div class="congTac khongVienTren">
-      <label class="hangCongTac" for="chkTimBangSDT">
-        <input type="checkbox" id="chkTimBangSDT" checked>
-        <span><strong>Cho phép tìm tôi bằng số điện thoại</strong></span>
-      </label>
-      <p class="giaiThich">Bật: ai biết số của bạn, nhập vào ô tìm trong app sẽ thấy nick của bạn để kết bạn. Tắt: dù biết số, họ tìm cũng không ra bạn.</p>
-    </div>
-
-    <div class="congTac">
-      <label class="hangCongTac" for="chkLaNhanTin">
-        <input type="checkbox" id="chkLaNhanTin">
-        <span><strong>Cho phép người lạ nhắn tin</strong></span>
-      </label>
-      <p class="giaiThich">Bật: người chưa kết bạn cũng nhắn tin cho bạn được. Tắt: chỉ bạn bè mới nhắn được.</p>
-    </div>
-
-    <div class="congTac">
-      <label class="hangCongTac" for="chkLaGoi">
-        <input type="checkbox" id="chkLaGoi">
-        <span><strong>Cho phép người lạ gọi</strong></span>
-      </label>
-      <p class="giaiThich">Cài đặt này lưu sẵn cho tính năng gọi thoại / gọi video (sẽ có ở bản sau). Hiện tại chưa gọi được trong app.</p>
-    </div>
-
-    <h3 class="tieuDeCon">🚫 Danh sách chặn</h3>
-    <div id="dsChanCaNhan" class="danhSach"></div>
-    <p class="goiY" id="trongChan">Bạn chưa chặn ai.</p>
   </section>
 
   <!-- ===== V4.1: GÓI VIP (chỉ chế độ máy chủ) ===== -->
@@ -276,13 +597,31 @@
           <p class="tenNguoi" id="tenChat"></p>
           <p class="chiTietNguoi" id="sdtChat"></p>
         </div>
+        <button type="button" id="btnGoiThoai" class="nutPhu nho" title="Gọi thoại">📞</button>
+        <button type="button" id="btnGoiVideo" class="nutPhu nho" title="Gọi video">📹</button>
         <button type="button" id="btnChanTrongChat" class="nutPhu nho nutDangXuat">🚫 Chặn</button>
       </div>
       <div id="hopTinNhan" class="hopTinNhan"></div>
+      <div id="hopTaiLen" class="hopTaiLen an">
+        <div class="thanhNenTaiLen"><div id="thanhTienTrinh"></div></div>
+        <span id="nhanTaiLen">Đang tải lên…</span>
+        <button type="button" id="btnHuyTaiLen" class="nutPhu nho" title="Hủy tải lên">✕</button>
+      </div>
       <div class="hangNhapChat">
+        <button type="button" id="btnChonAnh" class="nutPhu nho nutMedia" title="Gửi ảnh">📷</button>
+        <button type="button" id="btnChonTep" class="nutPhu nho nutMedia" title="Gửi tệp hoặc video (tối đa 200 MB)">📎</button>
+        <button type="button" id="btnGhiAm" class="nutPhu nho nutMedia" title="Ghi âm tin nhắn thoại">🎤</button>
         <input id="inpTinNhan" type="text" maxlength="1000" placeholder="Nhập tin nhắn…" autocomplete="off">
         <button type="button" id="btnGuiTin" class="nutChinh nutGuiTin">Gửi ➤</button>
       </div>
+      <div id="hopGhiAm" class="hopGhiAm an">
+        <span id="nhanGhiAm" class="nhanGhiAm">🎤 Bản ghi âm</span>
+        <audio id="audioXemTruoc" class="audioXemTruoc" controls></audio>
+        <button type="button" id="btnGuiAm" class="nutChinh nho">Gửi 🎤</button>
+        <button type="button" id="btnHuyAm" class="nutPhu nho">Hủy</button>
+      </div>
+      <input type="file" id="inpChonAnh" accept="image/*" class="an">
+      <input type="file" id="inpChonTep" class="an">
       <p class="loi" id="loiChat"></p>
     </section>
   </div>
@@ -317,6 +656,51 @@
 </nav>
 
 <div id="toast" class="toast an" role="status"></div>
+
+<!-- ===== V5: HỘP CUỘC GỌI ĐẾN ===== -->
+<div id="hopGoiDen" class="lopPhuGoi an" role="dialog" aria-label="Cuộc gọi đến">
+  <div class="theGoiDen">
+    <p class="nhanGoiDen" id="nhanLoaiGoiDen">📹 Cuộc gọi video đến</p>
+    <div class="avatarGoiLon" id="avatarGoiDen">😀</div>
+    <p class="tenGoiLon" id="tenGoiDen"></p>
+    <div class="hangNutGoi">
+      <button type="button" id="btnTuChoiGoi" class="nutGoi nutGoiDo">✖<span>Từ chối</span></button>
+      <button type="button" id="btnChapNhanGoi" class="nutGoi nutGoiXanh">✔<span>Nghe</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== V5: MÀN HÌNH ĐANG GỌI ===== -->
+<div id="manGoi" class="lopPhuGoi manGoi an" role="dialog" aria-label="Đang gọi">
+  <video id="videoXa" class="videoXa" autoplay playsinline></video>
+  <div id="avatarDangGoi" class="avatarGoiLon avatarDangGoi an">😀</div>
+  <video id="videoGan" class="videoGan" autoplay playsinline muted></video>
+  <div class="dauManGoi">
+    <p class="tenGoiLon" id="tenDangGoi"></p>
+    <p class="trangThaiGoi" id="trangThaiGoi">Đang gọi…</p>
+  </div>
+  <div class="hangNutGoi dieuKhienGoi">
+    <button type="button" id="btnTatTieng" class="nutGoi nutGoiXam">🎤<span>Tắt tiếng</span></button>
+    <button type="button" id="btnTatCamera" class="nutGoi nutGoiXam">📹<span>Tắt camera</span></button>
+    <button type="button" id="btnKetThucGoi" class="nutGoi nutGoiDo">📞<span>Kết thúc</span></button>
+  </div>
+</div>
+
+<!-- ===== V5.1: MÀN HÌNH KHÓA PIN (hiện khi mở app nếu đã bật khóa PIN) ===== -->
+<div id="manKhoaPin" class="lopPhuKhoa an" role="dialog" aria-label="Khóa ứng dụng">
+  <div class="theKhoaPin">
+    <p class="avatarGoiLon">🔒</p>
+    <h2>Hialo đang khóa</h2>
+    <p class="moTa">Nhập PIN của tài khoản này để mở ứng dụng.</p>
+    <input id="inpKhoaPin" type="password" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="• • • •">
+    <button type="button" id="btnMoKhoa" class="nutChinh">🔓 Mở khóa</button>
+    <p class="loi" id="loiKhoaPin"></p>
+    <button type="button" id="btnKhoaDangXuat" class="nutPhu nho">Đăng xuất khỏi tài khoản này</button>
+  </div>
+</div>
+
+<!-- ===== V5.1: audio phát nhạc chuông hStyle (phát lặp tới khi nghe/từ chối) ===== -->
+<audio id="amNhacChuong" loop preload="auto"></audio>
 
 <script src="script.js"></script>
 </body>
