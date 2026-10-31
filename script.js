@@ -2559,8 +2559,8 @@ if (typeof document !== "undefined") {
       hop.innerHTML = "";
       if (!kq.ok || !kq.goi) return;
       // V4.2: máy chủ cho biết cổng nào đã cấu hình + duyệt tay có bật không
-      var congTT = kq.congThanhToan || { momo: false, zalopay: false };
-      var coCong = !!(congTT.momo || congTT.zalopay);
+      var congTT = kq.congThanhToan || { momo: false, zalopay: false, vietqr: false };
+      var coCong = !!(congTT.momo || congTT.zalopay || congTT.vietqr);
       ["tuan", "thang", "quy", "doi"].forEach(function (key) {
         var g = kq.goi[key];
         if (!g) return;
@@ -2588,6 +2588,9 @@ if (typeof document !== "undefined") {
         if (congTT.zalopay) {
           phai.appendChild(taoNutNhan("🔵 Trả qua ZaloPay", "nutChinh nho nutZaloPay", function () { datGoiVip(key, "zalopay"); }));
         }
+        if (congTT.vietqr) {
+          phai.appendChild(taoNutNhan("🏦 Chuyển khoản VietQR", "nutChinh nho nutVietQR", function () { datGoiVip(key, "vietqr"); }));
+        }
         if (!coCong && !kq.manualPay) {
           phai.appendChild(taoNutNhan("Cổng thanh toán đang được cấu hình", "nutPhu nho", null, true));
         }
@@ -2614,10 +2617,12 @@ if (typeof document !== "undefined") {
         $("panelThanhToanVip").classList.add("an");
         $("pcTenGoi").textContent = kq.don.tenGoi || TEN_GOI_VIP[key] || key;
         $("pcSoTien").textContent = dinhDangTien(kq.don.soTien);
-        $("pcCong").textContent = cong === "momo" ? "MoMo" : "ZaloPay";
+        var tenCong = cong === "momo" ? "MoMo" : (cong === "zalopay" ? "ZaloPay" : "Chuyển khoản VietQR");
+        $("pcCong").textContent = tenCong;
         $("pcMaDon").textContent = kq.don.ma;
-        $("pcTrangThai").textContent = "⏳ Đang chờ bạn hoàn tất thanh toán trên trang của " +
-          (cong === "momo" ? "MoMo" : "ZaloPay") + "… VIP sẽ tự bật ngay khi cổng xác nhận (thường vài giây).";
+        $("pcTrangThai").textContent = cong === "vietqr"
+          ? "⏳ Quét mã VietQR bên dưới bằng app ngân hàng, chuyển ĐÚNG số tiền và ghi ĐÚNG mã đơn làm nội dung chuyển khoản. VIP sẽ tự bật ngay khi hệ thống đối soát thấy tiền về (thường vài giây)."
+          : "⏳ Đang chờ bạn hoàn tất thanh toán trên trang của " + tenCong + "… VIP sẽ tự bật ngay khi cổng xác nhận (thường vài giây).";
         var nutMo = $("pcMoLai");
         if (kq.payUrl) {
           nutMo.href = kq.payUrl;
@@ -2625,6 +2630,18 @@ if (typeof document !== "undefined") {
           window.open(kq.payUrl, "_blank");
         } else {
           nutMo.classList.add("an");
+        }
+        // VietQR: hiện ảnh mã QR + thông tin tài khoản nhận tiền ngay trong panel chờ
+        var hopQR = $("pcHopQR");
+        if (hopQR) {
+          if (cong === "vietqr" && kq.vietqr && kq.vietqr.anhQR) {
+            $("pcAnhQR").src = kq.vietqr.anhQR;
+            $("pcThongTinNH").textContent = "Ngân hàng: " + (kq.vietqr.tenNganHang || "") +
+              " · Số TK: " + (kq.vietqr.soTaiKhoan || "") + " · Chủ TK: " + (kq.vietqr.chuTaiKhoan || "");
+            hopQR.classList.remove("an");
+          } else {
+            hopQR.classList.add("an");
+          }
         }
         $("panelChoThanhToan").classList.remove("an");
         $("panelChoThanhToan").scrollIntoView({ behavior: "smooth", block: "center" });
