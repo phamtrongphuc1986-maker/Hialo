@@ -28,6 +28,21 @@
       <p class="moTa">Đăng ký / đăng nhập bằng số điện thoại. Chỉ nhận <strong>số di động Việt Nam</strong> (10 số, đầu 03 / 05 / 07 / 08 / 09) — không nhận số bàn, số nước ngoài, số tổng đài 1900 / 1800.</p>
       <button type="button" id="btnNhanOTP" class="nutChinh">📩 Nhận mã OTP</button>
       <p class="loi" id="loiSdt"></p>
+
+      <!-- V5.3: xác thực bằng tin nhắn TỰ GỬI (MO-SMS) — chỉ hiện khi máy chủ bật tính năng -->
+      <div id="khuSmsDen" class="an">
+        <p class="moTa" style="margin-top:14px;border-top:1px solid #f3f4f6;padding-top:12px"><strong>📩 Cách khác — tự gửi tin nhắn để xác thực:</strong> nếu không nhận được mã OTP, bạn có thể dùng chính số điện thoại này soạn một tin nhắn SMS gửi tới số cổng của HIALO. Hệ thống thấy tin đến từ đúng số của bạn là xác thực xong — bạn tự trả phí tin nhắn theo nhà mạng của mình.</p>
+        <button type="button" id="btnLayMaSmsDen" class="nutPhu">📩 Lấy mã để gửi tin</button>
+        <p class="loi" id="loiSmsDen"></p>
+        <div id="khuChoSmsDen" class="an">
+          <p class="moTa">Soạn tin nhắn với nội dung <strong>đúng nguyên văn</strong> như sau:</p>
+          <p class="maSmsDen" id="cuPhapSmsDen">HIALO ------</p>
+          <p class="moTa">và gửi tới số cổng <strong id="soCongSmsDen"></strong> — nhớ gửi từ <strong>chính số điện thoại bạn đang đăng ký</strong> ở trên.</p>
+          <a id="btnMoAppSms" class="nutChinh nutLienKet" href="#">📩 Mở app tin nhắn để gửi</a>
+          <p class="moTa" id="trangThaiSmsDen">Đang chờ tin nhắn từ số của bạn…</p>
+          <button type="button" id="btnHuySmsDen" class="nutPhu nho">Hủy chờ / lấy mã mới</button>
+        </div>
+      </div>
     </div>
 
     <!-- Màn hình 2: nhập mã OTP -->
