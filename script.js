@@ -648,6 +648,7 @@ if (typeof document !== "undefined") {
       if (kq && kq.ok && kq.smsDenBat && kq.soCong) {
         soCongSmsDen = kq.soCong;
         $("khuSmsDen").classList.remove("an");
+        khoiPhucPhienSmsDen();
       }
     });
   }
@@ -655,8 +656,51 @@ if (typeof document !== "undefined") {
   function dungChoSmsDen() {
     if (idKiemTraSmsDen) { clearInterval(idKiemTraSmsDen); idKiemTraSmsDen = null; }
     phienSmsDen = null;
+    try { localStorage.removeItem("hialo_phien_sms_den"); } catch (e) {}
     var khuCho = $("khuChoSmsDen");
     if (khuCho) khuCho.classList.add("an");
+  }
+
+  // Lưu phiên chờ MO-SMS xuống localStorage: nếu Chrome tải lại trang trong lúc
+  // người dùng qua app nhắn tin gửi SMS (rất hay xảy ra khi pin yếu), quay lại
+  // trang vẫn tiếp tục chờ và tự đăng nhập khi máy chủ đã khớp tin.
+  function luuPhienSmsDenCho() {
+    if (!phienSmsDen) return;
+    try {
+      localStorage.setItem("hialo_phien_sms_den", JSON.stringify({
+        sdt: phienSmsDen.sdt,
+        phienToken: phienSmsDen.phienToken,
+        hetHanLuc: phienSmsDen.hetHanLuc,
+        cuPhap: $("cuPhapSmsDen").textContent,
+        soCong: $("soCongSmsDen").textContent
+      }));
+    } catch (e) {}
+  }
+
+  function khoiPhucPhienSmsDen() {
+    var tho = null;
+    try { tho = localStorage.getItem("hialo_phien_sms_den"); } catch (e) {}
+    if (!tho) return;
+    var luu = null;
+    try { luu = JSON.parse(tho); } catch (e) {}
+    if (!luu || !luu.phienToken || !luu.hetHanLuc || Date.now() > luu.hetHanLuc) {
+      try { localStorage.removeItem("hialo_phien_sms_den"); } catch (e) {}
+      return;
+    }
+    var oNhap = $("inpSdt");
+    if (oNhap && oNhap.value && oNhap.value.replace(/\D/g, "") !== String(luu.sdt).replace(/\D/g, "")) return;
+    if (oNhap && !oNhap.value) oNhap.value = luu.sdt;
+    phienSmsDen = { sdt: luu.sdt, phienToken: luu.phienToken, hetHanLuc: luu.hetHanLuc };
+    if (luu.cuPhap) $("cuPhapSmsDen").textContent = luu.cuPhap;
+    if (luu.soCong) {
+      $("soCongSmsDen").textContent = luu.soCong;
+      soCongSmsDen = luu.soCong;
+      if (luu.cuPhap) $("btnMoAppSms").href = "sms:" + luu.soCong + "?body=" + encodeURIComponent(luu.cuPhap);
+    }
+    $("khuChoSmsDen").classList.remove("an");
+    if (idKiemTraSmsDen) clearInterval(idKiemTraSmsDen);
+    idKiemTraSmsDen = setInterval(kiemTraSmsDenDinhKy, 3000);
+    kiemTraSmsDenDinhKy();
   }
 
   function layMaSmsDenSuKien() {
@@ -676,6 +720,7 @@ if (typeof document !== "undefined") {
       $("btnMoAppSms").href = "sms:" + kq.soCong + "?body=" + encodeURIComponent(kq.cuPhap);
       $("trangThaiSmsDen").textContent = "Đang chờ tin nhắn từ số của bạn… (mã còn hiệu lực " + Math.round((Number(kq.hetHanGiay) || 300) / 60) + " phút)";
       $("khuChoSmsDen").classList.remove("an");
+      luuPhienSmsDenCho();
       idKiemTraSmsDen = setInterval(kiemTraSmsDenDinhKy, 3000);
       kiemTraSmsDenDinhKy();
     });
@@ -695,6 +740,7 @@ if (typeof document !== "undefined") {
       .then(function (kq) {
         if (!phienSmsDen || phienSmsDen !== phien) return; // phiên đã đổi/hủy trong lúc chờ
         if (kq && kq.token) { // đã xác thực -> đăng nhập như luồng OTP
+          try { localStorage.removeItem("hialo_phien_sms_den"); } catch (e) {}
           hoanTatDangNhapTuMayChu(kq, phien.sdt);
           return;
         }
