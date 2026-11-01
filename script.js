@@ -208,6 +208,9 @@ if (typeof document !== "undefined") {
   var sdtHienTai = null;       // số điện thoại đang đăng nhập
   var tokenMayChu = null;      // token phiên đăng nhập (chỉ khi TQD_SERVER khác rỗng)
   var phienOTP = null;         // phiên OTP đang chờ nhập mã
+  var phienSmsDen = null;      // V5.3: phiên MO-SMS đang chờ { sdt, phienToken, hetHanLuc }
+  var idKiemTraSmsDen = null;  // V5.3: interval tự kiểm tra kết quả MO-SMS mỗi 3 giây
+  var soCongSmsDen = "";       // V5.3: số cổng MO-SMS máy chủ công bố (chỉ khi tính năng bật)
   var sdtDangCho = null;       // số điện thoại đang chờ xác thực OTP
   var idDemNguoc = null;       // interval đếm ngược gửi lại mã
   var viTri = null;            // {lat, lng, macDinh}
@@ -495,6 +498,7 @@ if (typeof document !== "undefined") {
     phienOTP = null;
     sdtDangCho = null;
     if (idDemNguoc) { clearInterval(idDemNguoc); idDemNguoc = null; }
+    dungChoSmsDen(); // V5.3: dừng chờ MO-SMS khi đăng xuất
     luuPhienDangNhap();
     $("inpSdt").value = "";
     $("loiSdt").textContent = "";
@@ -597,7 +601,33 @@ if (typeof document !== "undefined") {
     phienOTP = null;
     sdtDangCho = null;
     if (idDemNguoc) { clearInterval(idDemNguoc); idDemNguoc = null; }
+    dungChoSmsDen();
     capNhatManHinh();
+  }
+
+  // Áp dụng kết quả đăng nhập thành công từ MÁY CHỦ (dùng chung cho OTP và MO-SMS V5.3):
+  // kq là response có { token, hoSo } đúng định dạng /api/otp/verify trả về.
+  function hoanTatDangNhapTuMayChu(kq, sdt) {
+    tokenMayChu = kq.token || null;
+    luuToken();
+    phienOTP = null;
+    sdtDangCho = null;
+    if (idDemNguoc) { clearInterval(idDemNguoc); idDemNguoc = null; }
+    dungChoSmsDen();
+    sdtHienTai = sdt;
+    luuPhienDangNhap();
+    if (kq.hoSo) { // máy chủ trả hồ sơ của chính mình -> đồng bộ về máy để hiển thị
+      var users = taiUsers();
+      users[sdt] = kq.hoSo;
+      luuUsers(users);
+    }
+    me = taiUsers()[sdt] || null;
+    capNhatManHinh();
+    ketNoiTinHieu(); // V5: nối kênh tín hiệu gọi ngay khi có token mới
+    kiemTraKhoaPin(); // V5.1: nếu tài khoản bật khóa PIN thì khóa ngay khi vừa đăng nhập
+    if (viTri && !viTri.macDinh) dongBoViTriLenMayChu();
+    if (me) hienToast("Đăng nhập thành công. Xin chào, " + me.nick + "! 🎉");
+    else hienToast("Xác thực số điện thoại xong! Tạo hồ sơ của bạn để bắt đầu nhé ✍️");
   }
 
   // Chế độ máy chủ: xác thực mã qua API, nhận token phiên đăng nhập
@@ -605,26 +635,73 @@ if (typeof document !== "undefined") {
     goiAPI("/api/otp/verify", "POST", { phone: sdtDangCho, code: $("inpOTP").value }, false)
       .then(function (kq) {
         if (!kq.ok) { $("loiOTP").textContent = kq.loi || "Mã chưa đúng. Kiểm tra lại nhé."; return; }
-        tokenMayChu = kq.token || null;
-        luuToken();
-        var sdt = sdtDangCho;
-        phienOTP = null;
-        sdtDangCho = null;
-        if (idDemNguoc) { clearInterval(idDemNguoc); idDemNguoc = null; }
-        sdtHienTai = sdt;
-        luuPhienDangNhap();
-        if (kq.hoSo) { // máy chủ trả hồ sơ của chính mình -> đồng bộ về máy để hiển thị
-          var users = taiUsers();
-          users[sdt] = kq.hoSo;
-          luuUsers(users);
+        hoanTatDangNhapTuMayChu(kq, sdtDangCho);
+      });
+  }
+
+  // ===== V5.3: XÁC THỰC BẰNG TIN NHẮN TỰ GỬI (MO-SMS) =====
+  // Hỏi máy chủ xem tính năng có bật không; chỉ khi bật mới hiện khối MO-SMS trong thẻ
+  // đăng nhập. Tắt -> khối ẩn hoàn toàn, luồng OTP cũ không thay đổi gì.
+  function taiCauHinhXacThuc() {
+    if (!TQD_SERVER) return;
+    goiAPI("/api/cau-hinh-xac-thuc", "GET", null, false).then(function (kq) {
+      if (kq && kq.ok && kq.smsDenBat && kq.soCong) {
+        soCongSmsDen = kq.soCong;
+        $("khuSmsDen").classList.remove("an");
+      }
+    });
+  }
+
+  function dungChoSmsDen() {
+    if (idKiemTraSmsDen) { clearInterval(idKiemTraSmsDen); idKiemTraSmsDen = null; }
+    phienSmsDen = null;
+    var khuCho = $("khuChoSmsDen");
+    if (khuCho) khuCho.classList.add("an");
+  }
+
+  function layMaSmsDenSuKien() {
+    var kt = kiemTraSoVN($("inpSdt").value);
+    if (!kt.hople) { $("loiSmsDen").textContent = kt.lyDo; return; }
+    $("loiSmsDen").textContent = "";
+    goiAPI("/api/xacthuc-sms/bat-dau", "POST", { soDienThoai: kt.so }, false).then(function (kq) {
+      if (!kq.ok) { $("loiSmsDen").textContent = kq.loi || "Chưa lấy được mã. Thử lại sau nhé."; return; }
+      dungChoSmsDen();
+      phienSmsDen = {
+        sdt: kt.so,
+        phienToken: kq.phienToken,
+        hetHanLuc: Date.now() + (Number(kq.hetHanGiay) || 300) * 1000
+      };
+      $("cuPhapSmsDen").textContent = kq.cuPhap;
+      $("soCongSmsDen").textContent = kq.soCong;
+      $("btnMoAppSms").href = "sms:" + kq.soCong + "?body=" + encodeURIComponent(kq.cuPhap);
+      $("trangThaiSmsDen").textContent = "Đang chờ tin nhắn từ số của bạn… (mã còn hiệu lực " + Math.round((Number(kq.hetHanGiay) || 300) / 60) + " phút)";
+      $("khuChoSmsDen").classList.remove("an");
+      idKiemTraSmsDen = setInterval(kiemTraSmsDenDinhKy, 3000);
+      kiemTraSmsDenDinhKy();
+    });
+  }
+
+  function kiemTraSmsDenDinhKy() {
+    if (!phienSmsDen) { dungChoSmsDen(); return; }
+    var conGiay = Math.round((phienSmsDen.hetHanLuc - Date.now()) / 1000);
+    if (conGiay <= 0) {
+      dungChoSmsDen();
+      $("loiSmsDen").textContent = "Mã đã hết hạn. Bấm \"Lấy mã để gửi tin\" để lấy mã mới nhé.";
+      return;
+    }
+    $("trangThaiSmsDen").textContent = "Đang chờ tin nhắn từ số của bạn… (còn " + conGiay + " giây)";
+    var phien = phienSmsDen;
+    goiAPI("/api/xacthuc-sms/kiem-tra", "POST", { soDienThoai: phien.sdt, phienToken: phien.phienToken }, false)
+      .then(function (kq) {
+        if (!phienSmsDen || phienSmsDen !== phien) return; // phiên đã đổi/hủy trong lúc chờ
+        if (kq && kq.token) { // đã xác thực -> đăng nhập như luồng OTP
+          hoanTatDangNhapTuMayChu(kq, phien.sdt);
+          return;
         }
-        me = taiUsers()[sdt] || null;
-        capNhatManHinh();
-        ketNoiTinHieu(); // V5: nối kênh tín hiệu gọi ngay khi có token mới
-        kiemTraKhoaPin(); // V5.1: nếu tài khoản bật khóa PIN thì khóa ngay khi vừa đăng nhập
-        if (viTri && !viTri.macDinh) dongBoViTriLenMayChu();
-        if (me) hienToast("Đăng nhập thành công. Xin chào, " + me.nick + "! 🎉");
-        else hienToast("Xác thực số điện thoại xong! Tạo hồ sơ của bạn để bắt đầu nhé ✍️");
+        if (kq && kq.hetHan) {
+          dungChoSmsDen();
+          $("loiSmsDen").textContent = "Mã đã hết hạn. Bấm \"Lấy mã để gửi tin\" để lấy mã mới nhé.";
+        }
       });
   }
 
@@ -2764,6 +2841,13 @@ if (typeof document !== "undefined") {
     $("btnXacNhanOTP").addEventListener("click", xacNhanOTPSuKien);
     $("btnGuiLai").addEventListener("click", guiLaiMaSuKien);
     $("btnDoiSo").addEventListener("click", doiSoSuKien);
+    // Luồng MO-SMS (V5.3): chỉ hiện khi máy chủ bật tính năng
+    $("btnLayMaSmsDen").addEventListener("click", layMaSmsDenSuKien);
+    $("btnHuySmsDen").addEventListener("click", function () {
+      dungChoSmsDen();
+      $("loiSmsDen").textContent = "";
+    });
+    taiCauHinhXacThuc();
     $("btnDangXuat").addEventListener("click", dangXuat);
 
     $("formHoSo").addEventListener("submit", luuHoSoSuKien);
