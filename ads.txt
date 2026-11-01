@@ -1,0 +1,2 @@
+# ads.txt cho hialo.vn — SAU KHI tai khoan AdSense duoc duyet, thay XXXXXXXXXXXXXXXX bang ma pub- cua ban (bo chu "pub-" o dau, chi giu phan so)
+# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0

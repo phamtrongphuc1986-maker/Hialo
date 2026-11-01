@@ -1,0 +1,2 @@
+# app-ads.txt cho ung dung Hialo tren CH Play — dien ma pub- tu tai khoan AdMob sau khi app phat hanh, bo dau # o dong duoi
+google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
