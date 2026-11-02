@@ -781,6 +781,10 @@ if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").ca
 .tkGoiY button{display:block;width:100%;text-align:left;background:none;border:none;padding:11px 14px;font-size:15px;cursor:pointer;color:#1c2733}
 .tkGoiY button:hover,.tkGoiY button:active{background:#f4f9e8}
 .tkGoiY .khongCo{padding:11px 14px;color:#5b6b7c;font-size:14px}
+#mucVip.dongGonH > *:not(h2){display:none!important}
+#mucVip > h2.dauGonH{cursor:pointer;position:relative;padding-right:28px}
+#mucVip > h2.dauGonH::after{content:"▾";position:absolute;right:4px;top:50%;transform:translateY(-50%);transition:transform .25s;color:#d81b74}
+#mucVip.dongGonH > h2.dauGonH::after{transform:translateY(-50%) rotate(-90deg)}
 </style>
 <script>
 (function(){
@@ -857,6 +861,20 @@ if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").ca
   oH.addEventListener('input', veH);
   oH.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); var b = hopH.querySelector('button'); if (b) b.click(); } });
   document.addEventListener('click', function(e){ if (!hopH.contains(e.target) && e.target !== oH) hopH.style.display = 'none'; });
+})();
+</script>
+<script>
+(function(){
+  var vip = document.getElementById('mucVip');
+  if (!vip) return;
+  var h2 = vip.querySelector('h2');
+  if (!h2) return;
+  vip.classList.add('dongGonH');
+  h2.classList.add('dauGonH');
+  h2.addEventListener('click', function(){ vip.classList.toggle('dongGonH'); });
+  document.addEventListener('click', function(e){
+    if (e.target && e.target.id === 'btnLenVip') vip.classList.remove('dongGonH');
+  });
 })();
 </script>
 </body>
