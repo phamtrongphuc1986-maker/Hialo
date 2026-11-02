@@ -786,34 +786,72 @@ if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").ca
 (function(){
   function boDauH(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D'); }
   var MUC_H = [
-    { t:'📱 Đăng nhập / Đăng ký bằng số điện thoại', kw:'dang nhap dang ky so dien thoai sdt otp tin nhan sms xac thuc', muc:'manDienThoai' },
+    { t:'🥇 Giá vàng', kw:'gia vang vang sjc mieng nhan', tienich:'vang' },
+    { t:'💱 Tỉ giá', kw:'ti gia ty gia usd ngoai te doi tien', tienich:'tygia' },
+    { t:'🌦 Thời tiết', kw:'thoi tiet mua nang nhiet do gio bao', tienich:'thoitiet' },
+    { t:'📰 Tin tức', kw:'tin tuc bao doc bao tin moi', tienich:'tintuc' },
+    { t:'🎰 Xổ số', kw:'xo so ket qua ve so xskt', href:'https://xskt.com.vn', moi:true },
+    { t:'⚽ Bóng đá', kw:'bong da livescore ti so truc tiep', href:'https://www.livescore.com', moi:true },
+    { t:'📺 YouTube', kw:'youtube xem video nghe nhac phim', href:'https://www.youtube.com', moi:true },
+    { t:'🧭 Tìm người quanh đây', kw:'tim quanh day ket ban gan dinh vi loc gioi tinh tuoi', muc:'tabKhamPha', tab:'khampha' },
+    { t:'📱 Đăng nhập / Đăng ký', kw:'dang nhap dang ky so dien thoai sdt otp sms xac thuc tai khoan', muc:'manDienThoai', tab:'canhan' },
+    { t:'⭐ Gói VIP HIALO', kw:'vip goi vip mua vip nang cap gia vip quyen loi', muc:'mucVip', tab:'canhan' },
+    { t:'⬇️ Cài đặt ứng dụng HIALO', kw:'cai dat ung dung app tai app man hinh chinh', muc:'khoiCaiHialo' },
     { t:'📄 Chính sách bảo mật', kw:'chinh sach bao mat quyen rieng tu du lieu ca nhan', href:'chinh-sach-bao-mat.html' },
-    { t:'📜 Điều khoản sử dụng', kw:'dieu khoan su dung quy dinh vip hoan tien', href:'dieu-khoan-su-dung.html' },
-    { t:'⬇️ Cài đặt ứng dụng HIALO', kw:'cai dat ung dung app man hinh chinh tai app', muc:'khoiCaiHialo' },
-    { t:'✉️ Hỗ trợ — hotro@hialo.vn', kw:'ho tro lien he giup do quen pin khoa tai khoan bao loi', chanTrang:true }
+    { t:'📜 Điều khoản sử dụng', kw:'dieu khoan su dung quy dinh hoan tien', href:'dieu-khoan-su-dung.html' },
+    { t:'✉️ Hỗ trợ — hotro@hialo.vn', kw:'ho tro lien he giup do quen pin khoa tai khoan bao loi', chanTrang:true },
+    { t:'⛴️ Lịch phà Đồng Bài: giờ chạy & giá vé', kw:'pha dong bai cat ba lich chay gia ve cai vieng cat hai ben pha', href:'https://www.benphadongbai.io.vn', moi:true },
+    { t:'🌊 Thủy triều & giá xăng (web phà)', kw:'thuy trieu con nuoc muc nuoc gia xang dau lich trieu', href:'https://www.benphadongbai.io.vn', moi:true }
   ];
   var oH = document.getElementById('oTimKiemH');
   var hopH = document.getElementById('goiYTimKiemH');
   if (!oH || !hopH) return;
   function denH(m){
     hopH.style.display = 'none';
-    if (m.href) { window.location.href = m.href; return; }
-    var el = m.chanTrang ? document.querySelector('footer.chanTrang') : document.getElementById(m.muc);
-    if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
     oH.blur();
+    if (m.href) {
+      if (m.moi) window.open(m.href, '_blank', 'noopener'); else window.location.href = m.href;
+      return;
+    }
+    if (m.tienich) {
+      var nutTabTU = document.querySelector('.tabBtn[data-tab="khampha"]');
+      if (nutTabTU) nutTabTU.click();
+      setTimeout(function(){
+        var oTU = document.querySelector('button.oTienIch[data-tienich="' + m.tienich + '"]');
+        if (oTU) oTU.click();
+        var mucTU = document.getElementById('mucTienIch');
+        if (mucTU) setTimeout(function(){ mucTU.scrollIntoView({ behavior:'smooth', block:'start' }); }, 150);
+      }, 120);
+      return;
+    }
+    if (m.tab) {
+      var nutTabH = document.querySelector('.tabBtn[data-tab="' + m.tab + '"]');
+      if (nutTabH) nutTabH.click();
+    }
+    var el = m.chanTrang ? document.querySelector('footer.chanTrang') : document.getElementById(m.muc);
+    if (el) setTimeout(function(){ el.scrollIntoView({ behavior:'smooth', block:'start' }); }, 120);
   }
   function veH(){
-    var q = boDauH(oH.value.trim());
+    var tho = oH.value.trim();
+    var q = boDauH(tho);
     if (q.length < 2) { hopH.style.display = 'none'; return; }
     var thay = MUC_H.filter(function(m){ return boDauH(m.t).indexOf(q) >= 0 || boDauH(m.kw).indexOf(q) >= 0; }).slice(0, 8);
-    if (!thay.length) { hopH.innerHTML = '<div class="khongCo">Không thấy kết quả — thử từ khóa khác.</div>'; hopH.style.display = 'block'; return; }
     hopH.innerHTML = '';
+    if (!thay.length) {
+      var kc = document.createElement('div');
+      kc.className = 'khongCo'; kc.textContent = 'Không thấy trong HIALO — tìm trên Google bên dưới:';
+      hopH.appendChild(kc);
+    }
     thay.forEach(function(m){
       var b = document.createElement('button');
       b.type = 'button'; b.textContent = m.t;
       b.addEventListener('click', function(){ denH(m); });
       hopH.appendChild(b);
     });
+    var bg = document.createElement('button');
+    bg.type = 'button'; bg.textContent = '🌐 Tìm \u201C' + tho + '\u201D trên Google';
+    bg.addEventListener('click', function(){ hopH.style.display = 'none'; window.open('https://www.google.com/search?q=' + encodeURIComponent(tho), '_blank', 'noopener'); });
+    hopH.appendChild(bg);
     hopH.style.display = 'block';
   }
   oH.addEventListener('input', veH);
