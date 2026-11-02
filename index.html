@@ -20,6 +20,14 @@
     <p class="phuDe">Tìm người ở gần bạn — theo giới tính, độ tuổi và khoảng cách</p>
   </header>
 
+  <div class="tkHopNgoai">
+    <div class="tkHop">
+      <span class="tkKinh">🔍</span>
+      <input id="oTimKiemH" type="search" placeholder="Tìm trong HIALO: đăng nhập, chính sách, hỗ trợ…" autocomplete="off">
+      <div id="goiYTimKiemH" class="tkGoiY" style="display:none"></div>
+    </div>
+  </div>
+
   <!-- ===== TAB CÁ NHÂN: tài khoản & hồ sơ (v3) + cài đặt riêng tư (v4) ===== -->
   <div id="tabCaNhan" class="tabNoiDung">
 
@@ -761,6 +769,56 @@ if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").ca
   function capNhatTop(){ nutTop.style.display = window.scrollY > 300 ? 'block' : 'none'; }
   window.addEventListener('scroll', capNhatTop, { passive: true }); capNhatTop();
   nutTop.addEventListener('click', function(){ window.scrollTo({ top: 0, behavior: 'smooth' }); });
+})();
+</script>
+<style>
+.tkHopNgoai{max-width:640px;margin:10px auto 0;padding:0 14px}
+.tkHop{position:relative;display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #d8dee6;border-radius:24px;padding:9px 14px}
+.tkHop:focus-within{border-color:#9acd32;box-shadow:0 2px 10px rgba(154,205,50,.25)}
+.tkKinh{font-size:17px}
+#oTimKiemH{flex:1;border:none;outline:none;font-size:16px;background:transparent;min-width:0}
+.tkGoiY{position:absolute;left:0;right:0;top:calc(100% + 6px);background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.15);overflow:hidden;z-index:60}
+.tkGoiY button{display:block;width:100%;text-align:left;background:none;border:none;padding:11px 14px;font-size:15px;cursor:pointer;color:#1c2733}
+.tkGoiY button:hover,.tkGoiY button:active{background:#f4f9e8}
+.tkGoiY .khongCo{padding:11px 14px;color:#5b6b7c;font-size:14px}
+</style>
+<script>
+(function(){
+  function boDauH(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D'); }
+  var MUC_H = [
+    { t:'📱 Đăng nhập / Đăng ký bằng số điện thoại', kw:'dang nhap dang ky so dien thoai sdt otp tin nhan sms xac thuc', muc:'manDienThoai' },
+    { t:'📄 Chính sách bảo mật', kw:'chinh sach bao mat quyen rieng tu du lieu ca nhan', href:'chinh-sach-bao-mat.html' },
+    { t:'📜 Điều khoản sử dụng', kw:'dieu khoan su dung quy dinh vip hoan tien', href:'dieu-khoan-su-dung.html' },
+    { t:'⬇️ Cài đặt ứng dụng HIALO', kw:'cai dat ung dung app man hinh chinh tai app', muc:'khoiCaiHialo' },
+    { t:'✉️ Hỗ trợ — hotro@hialo.vn', kw:'ho tro lien he giup do quen pin khoa tai khoan bao loi', chanTrang:true }
+  ];
+  var oH = document.getElementById('oTimKiemH');
+  var hopH = document.getElementById('goiYTimKiemH');
+  if (!oH || !hopH) return;
+  function denH(m){
+    hopH.style.display = 'none';
+    if (m.href) { window.location.href = m.href; return; }
+    var el = m.chanTrang ? document.querySelector('footer.chanTrang') : document.getElementById(m.muc);
+    if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+    oH.blur();
+  }
+  function veH(){
+    var q = boDauH(oH.value.trim());
+    if (q.length < 2) { hopH.style.display = 'none'; return; }
+    var thay = MUC_H.filter(function(m){ return boDauH(m.t).indexOf(q) >= 0 || boDauH(m.kw).indexOf(q) >= 0; }).slice(0, 8);
+    if (!thay.length) { hopH.innerHTML = '<div class="khongCo">Không thấy kết quả — thử từ khóa khác.</div>'; hopH.style.display = 'block'; return; }
+    hopH.innerHTML = '';
+    thay.forEach(function(m){
+      var b = document.createElement('button');
+      b.type = 'button'; b.textContent = m.t;
+      b.addEventListener('click', function(){ denH(m); });
+      hopH.appendChild(b);
+    });
+    hopH.style.display = 'block';
+  }
+  oH.addEventListener('input', veH);
+  oH.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); var b = hopH.querySelector('button'); if (b) b.click(); } });
+  document.addEventListener('click', function(e){ if (!hopH.contains(e.target) && e.target !== oH) hopH.style.display = 'none'; });
 })();
 </script>
 </body>
