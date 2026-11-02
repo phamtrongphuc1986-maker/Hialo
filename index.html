@@ -664,6 +664,11 @@
   </div>
 
   <footer class="chanTrang">
+    <div id="khoiCaiHialo" style="margin:6px 0 12px">
+      <button type="button" id="nutCaiHialo" style="background:#9acd32;color:#14260a;border:none;border-radius:10px;padding:12px 22px;font-size:16px;font-weight:700;cursor:pointer">⬇️ Cài đặt ứng dụng HIALO</button>
+      <p style="margin:6px 0 0;font-size:13px;opacity:.85">Đưa HIALO ra màn hình chính — mở nhanh như một ứng dụng.</p>
+      <p id="caiHialoHd" style="display:none;margin:6px 0 0;font-size:13px"></p>
+    </div>
     <p>©www.hialo.vn®™ 11/2026<br>Hỗ trợ : <a href="mailto:hotro@hialo.vn">hotro@hialo.vn</a><br><a href="chinh-sach-bao-mat.html">Chính sách bảo mật</a> · <a href="dieu-khoan-su-dung.html">Điều khoản sử dụng</a></p>
   </footer>
 </div>
@@ -727,6 +732,23 @@
 <script src="script.js"></script>
 <script>
 if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").catch(function () {}); }
+</script>
+<script>
+(function(){
+  var skCai = null;
+  window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); skCai = e; });
+  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+    var k = document.getElementById('khoiCaiHialo'); if (k) k.style.display = 'none';
+  }
+  var nutCai = document.getElementById('nutCaiHialo');
+  if (nutCai) nutCai.addEventListener('click', function(){
+    if (skCai) { skCai.prompt(); skCai.userChoice.then(function(){ skCai = null; }); }
+    else {
+      var hd = document.getElementById('caiHialoHd');
+      if (hd) { hd.style.display = 'block'; hd.textContent = 'Cách cài thủ công: chạm nút ⋮ ở góc phải trên của Chrome → “Cài đặt ứng dụng” (hoặc “Thêm vào màn hình chính”) → Cài đặt. Trên iPhone: nút Chia sẻ → “Thêm vào Màn hình chính”.'; }
+    }
+  });
+})();
 </script>
 </body>
 </html>
