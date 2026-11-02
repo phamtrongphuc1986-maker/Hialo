@@ -750,5 +750,16 @@ if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").ca
   });
 })();
 </script>
+<script>
+(function(){
+  var nutTop = document.createElement('button');
+  nutTop.type = 'button'; nutTop.innerHTML = '⬆'; nutTop.setAttribute('aria-label', 'Về đầu trang');
+  nutTop.style.cssText = 'position:fixed;right:14px;bottom:78px;z-index:999;width:46px;height:46px;border-radius:50%;border:none;background:#9acd32;color:#14260a;font-size:20px;box-shadow:0 3px 10px rgba(0,0,0,.3);cursor:pointer;display:none';
+  document.body.appendChild(nutTop);
+  function capNhatTop(){ nutTop.style.display = window.scrollY > 300 ? 'block' : 'none'; }
+  window.addEventListener('scroll', capNhatTop, { passive: true }); capNhatTop();
+  nutTop.addEventListener('click', function(){ window.scrollTo({ top: 0, behavior: 'smooth' }); });
+})();
+</script>
 </body>
 </html>
