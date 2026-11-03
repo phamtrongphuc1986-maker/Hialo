@@ -604,6 +604,15 @@
     </section>
 
     <section class="the">
+      <h2>📇 Người quen trong danh bạ máy</h2>
+      <p class="moTa">Bấm nút dưới đây và chọn người trong danh bạ điện thoại của bạn — số nào <b>đã dùng HIALO</b> và cho phép tìm bằng số điện thoại sẽ hiện ở đây để bạn kết bạn ngay. Số chưa dùng HIALO, hoặc đã tắt cho phép tìm bằng số điện thoại, sẽ không hiện.</p>
+      <button type="button" id="btnQuenDanhBa" class="nutChinh">📇 Xem người quen từ danh bạ máy</button>
+      <p class="loi" id="loiQuenDanhBa"></p>
+      <div id="dsQuenDanhBa" class="danhSach"></div>
+      <p class="goiY" id="trongQuenDanhBa">Chưa kiểm tra danh bạ. Mỗi lần kiểm tra tối đa 60 số.</p>
+    </section>
+
+    <section class="the">
       <h2>👥 Bạn bè</h2>
       <div id="dsBanBe" class="danhSach"></div>
       <p class="goiY" id="trongBanBe">Chưa có bạn bè nào. Hãy tìm bạn bằng số điện thoại ở trên nhé.</p>
@@ -904,6 +913,89 @@ if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").ca
       } catch (e) { clearInterval(iv); }
     }, 1500);
   } catch (e) {}
+})();
+</script>
+
+<script>
+// ===== Muc "Nguoi quen trong danh ba may" (tab Danh ba): doi chieu danh ba dien thoai voi tai khoan HIALO =====
+(function () {
+  var KHOA = "tqd_token", BASE = "https://api.hialo.vn";
+  function $(id){return document.getElementById(id);}
+  function chuanSdt(raw){
+    var d = String(raw||'').replace(/[^0-9]/g,'');
+    if (d.length===11 && d.indexOf('84')===0) d='0'+d.slice(2);
+    return /^0[0-9]{9}$/.test(d) ? d : null;
+  }
+  function api(path, method, body){
+    var token=null; try{ token=localStorage.getItem(KHOA); }catch(e){}
+    var headers={'Content-Type':'application/json'};
+    if(token) headers['Authorization']='Bearer '+token;
+    return fetch(BASE+path,{method:method,headers:headers,body:body?JSON.stringify(body):undefined})
+      .then(function(r){return r.json().catch(function(){return {ok:false};});})
+      .catch(function(){return {ok:false};});
+  }
+  function theNguoi(kq, tenDanhBa, sdt){
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;gap:10px;align-items:center;background:#fff;border:1px solid #f3d9e2;border-radius:14px;padding:10px;margin:6px 0;';
+    var av=document.createElement('div');
+    av.style.cssText='width:46px;height:46px;border-radius:50%;background:#ffeef4;display:flex;align-items:center;justify-content:center;font-size:24px;flex:none;';
+    av.textContent=kq.emoji||'🙂';
+    var giua=document.createElement('div'); giua.style.cssText='flex:1;min-width:0;';
+    var t1=document.createElement('div'); t1.style.cssText='font-weight:bold;font-size:16px;'; t1.textContent=kq.nick||sdt;
+    var t2=document.createElement('div'); t2.style.cssText='color:#777;font-size:13px;';
+    t2.textContent='Trong danh bạ máy: '+tenDanhBa+((kq.gioiTinh||kq.tuoi)?' · '+(kq.gioiTinh==='nu'?'♀ Nữ':'♂ Nam')+(kq.tuoi?' · '+kq.tuoi+' tuổi':''):'');
+    giua.appendChild(t1); giua.appendChild(t2);
+    row.appendChild(av); row.appendChild(giua);
+    var nut=document.createElement('button'); nut.type='button'; nut.style.flex='none';
+    if(kq.quanHe==='ban'){ nut.textContent='Đã là bạn ✓'; nut.className='nutPhu nho'; nut.disabled=true; }
+    else if(kq.quanHe==='da-gui'){ nut.textContent='Đã gửi lời mời'; nut.className='nutPhu nho'; nut.disabled=true; }
+    else if(kq.quanHe==='cho-duy'){
+      nut.textContent='✔ Chấp nhận'; nut.className='nutChinh nho';
+      nut.onclick=function(){ nut.disabled=true; api('/api/ketban/tra-loi','POST',{sdt:sdt,chapNhan:true}).then(function(r){
+        if(r.ok){ nut.textContent='Đã là bạn ✓'; } else { nut.disabled=false; $('loiQuenDanhBa').textContent=r.loi||'Chưa chấp nhận được.'; } }); };
+    } else {
+      nut.textContent='➕ Kết bạn'; nut.className='nutChinh nho';
+      nut.onclick=function(){ nut.disabled=true; api('/api/ketban/gui','POST',{sdt:sdt}).then(function(r){
+        if(r.ok){ nut.textContent='Đã gửi lời mời ✓'; } else { nut.disabled=false; $('loiQuenDanhBa').textContent=r.loi||'Chưa gửi được lời mời.'; } }); };
+    }
+    row.appendChild(nut);
+    return row;
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    var btn=$('btnQuenDanhBa'); if(!btn) return;
+    btn.addEventListener('click', function(){
+      var loi=$('loiQuenDanhBa'), ds=$('dsQuenDanhBa'), trong=$('trongQuenDanhBa');
+      loi.textContent='';
+      if(!('contacts' in navigator)||!navigator.contacts||!navigator.contacts.select){
+        loi.textContent='Trình duyệt này không hỗ trợ đọc danh bạ. Hãy mở HIALO bằng Chrome trên điện thoại Android.';
+        return;
+      }
+      navigator.contacts.select(['name','tel'],{multiple:true}).then(function(cs){
+        if(!cs||!cs.length) return;
+        var mapSo={};
+        cs.forEach(function(c){
+          var ten=(c.name&&c.name[0])?c.name[0]:'';
+          (c.tel||[]).forEach(function(t){ var s=chuanSdt(t); if(s&&!mapSo[s]) mapSo[s]=ten||s; });
+        });
+        var cacSo=Object.keys(mapSo).slice(0,60);
+        if(!cacSo.length){ trong.textContent='Không lấy được số hợp lệ nào từ lựa chọn vừa rồi.'; return; }
+        ds.innerHTML=''; trong.textContent='Đang kiểm tra 0/'+cacSo.length+' số…';
+        var thay=0, xong=0;
+        (function tiep(i){
+          if(i>=cacSo.length){
+            trong.textContent='Đã kiểm tra '+cacSo.length+' số — thấy '+thay+' người đang dùng HIALO.'+(thay?'':' Các số còn lại chưa dùng HIALO hoặc đã tắt cho phép tìm bằng số điện thoại.');
+            return;
+          }
+          var sdt=cacSo[i];
+          api('/api/tim-sdt?sdt='+encodeURIComponent(sdt),'GET',null).then(function(kq){
+            xong++; trong.textContent='Đang kiểm tra '+xong+'/'+cacSo.length+' số…';
+            if(kq&&kq.ok&&kq.timThay){ thay++; ds.appendChild(theNguoi(kq,mapSo[sdt],sdt)); }
+            tiep(i+1);
+          });
+        })(0);
+      }).catch(function(){});
+    });
+  });
 })();
 </script>
 </body>
