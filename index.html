@@ -877,5 +877,34 @@ if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").ca
   });
 })();
 </script>
+
+<script>
+// ===== Deep link tu Goi Xe Nhanh: ?goi=<sdt> -> mo tab Danh ba + tu tim so do =====
+(function () {
+  try {
+    var goi = new URLSearchParams(location.search).get('goi');
+    if (!goi) return;
+    goi = String(goi).replace(/[^0-9+]/g, '');
+    if (!goi) return;
+    var lan = 0;
+    var iv = setInterval(function () {
+      lan++;
+      try {
+        var nutTab = document.querySelector('.tabBtn[data-tab="danhba"]');
+        var inp = document.getElementById('inpTimSdt');
+        var nutTim = document.getElementById('btnTimSdt');
+        var daVaoApp = nutTab && nutTab.offsetParent !== null;
+        if (daVaoApp && inp && nutTim) {
+          clearInterval(iv);
+          nutTab.click();
+          inp.value = goi;
+          setTimeout(function () { try { nutTim.click(); } catch (e) {} }, 600);
+          try { history.replaceState(null, '', location.pathname); } catch (e) {}
+        } else if (lan > 40) clearInterval(iv);
+      } catch (e) { clearInterval(iv); }
+    }, 1500);
+  } catch (e) {}
+})();
+</script>
 </body>
 </html>
