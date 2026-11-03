@@ -605,10 +605,11 @@
 
     <section class="the">
       <h2>📇 Người quen trong danh bạ máy</h2>
-      <p class="moTa">Bấm nút dưới đây và chọn người trong danh bạ điện thoại của bạn — số nào <b>đã dùng HIALO</b> và cho phép tìm bằng số điện thoại sẽ hiện ở đây để bạn kết bạn ngay. Số chưa dùng HIALO, hoặc đã tắt cho phép tìm bằng số điện thoại, sẽ không hiện.</p>
+      <p class="moTa">Bấm nút dưới đây và chọn người trong danh bạ điện thoại của bạn — số nào <b>đã dùng HIALO</b> và cho phép tìm bằng số điện thoại sẽ hiện ở đây để bạn kết bạn ngay. Số <b>chưa dùng HIALO</b> sẽ hiện ở danh sách Mời bên dưới — bấm nút <b>💌 Mời</b> bên phải số là có sẵn tin nhắn mời, bạn chỉ việc bấm gửi.</p>
       <button type="button" id="btnQuenDanhBa" class="nutChinh">📇 Xem người quen từ danh bạ máy</button>
       <p class="loi" id="loiQuenDanhBa"></p>
       <div id="dsQuenDanhBa" class="danhSach"></div>
+      <div id="dsMoiDanhBa" class="danhSach"></div>
       <p class="goiY" id="trongQuenDanhBa">Chưa kiểm tra danh bạ. Mỗi lần kiểm tra tối đa 60 số.</p>
     </section>
 
@@ -917,9 +918,11 @@ if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").ca
 </script>
 
 <script>
-// ===== Muc "Nguoi quen trong danh ba may" (tab Danh ba): doi chieu danh ba dien thoai voi tai khoan HIALO =====
+// ===== Muc "Nguoi quen trong danh ba may" v2: dang dung HIALO -> ket ban; chua dung -> nut Moi (sms soan san) =====
 (function () {
   var KHOA = "tqd_token", BASE = "https://api.hialo.vn";
+  var TIN_MOI = "Chao ban, minh la Phuc. Ket ban voi minh tren HIALO nhe: nhan tin, goi dien mien phi, tim ban quanh day. Mo www.hialo.vn roi dang ky bang so dien thoai cua ban la xong. Cam on ban!";
+  var TIN_MOI_HIEN = "Chào bạn, mình là Phúc. Kết bạn với mình trên HIALO nhé: nhắn tin, gọi điện miễn phí, tìm bạn quanh đây. Mở www.hialo.vn rồi đăng ký bằng số điện thoại của bạn là xong. Cảm ơn bạn!";
   function $(id){return document.getElementById(id);}
   function chuanSdt(raw){
     var d = String(raw||'').replace(/[^0-9]/g,'');
@@ -934,9 +937,13 @@ if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").ca
       .then(function(r){return r.json().catch(function(){return {ok:false};});})
       .catch(function(){return {ok:false};});
   }
-  function theNguoi(kq, tenDanhBa, sdt){
+  function khungThe(){
     var row=document.createElement('div');
     row.style.cssText='display:flex;gap:10px;align-items:center;background:#fff;border:1px solid #f3d9e2;border-radius:14px;padding:10px;margin:6px 0;';
+    return row;
+  }
+  function theNguoi(kq, tenDanhBa, sdt){
+    var row=khungThe();
     var av=document.createElement('div');
     av.style.cssText='width:46px;height:46px;border-radius:50%;background:#ffeef4;display:flex;align-items:center;justify-content:center;font-size:24px;flex:none;';
     av.textContent=kq.emoji||'🙂';
@@ -961,10 +968,27 @@ if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").ca
     row.appendChild(nut);
     return row;
   }
+  function theMoi(tenDanhBa, sdt){
+    var row=khungThe();
+    var av=document.createElement('div');
+    av.style.cssText='width:46px;height:46px;border-radius:50%;background:#eef6ff;display:flex;align-items:center;justify-content:center;font-size:24px;flex:none;';
+    av.textContent='📱';
+    var giua=document.createElement('div'); giua.style.cssText='flex:1;min-width:0;';
+    var t1=document.createElement('div'); t1.style.cssText='font-weight:bold;font-size:16px;'; t1.textContent=tenDanhBa||sdt;
+    var t2=document.createElement('div'); t2.style.cssText='color:#777;font-size:13px;'; t2.textContent=sdt+' · chưa dùng HIALO';
+    giua.appendChild(t1); giua.appendChild(t2);
+    row.appendChild(av); row.appendChild(giua);
+    var a=document.createElement('a');
+    a.className='nutChinh nho'; a.style.cssText='flex:none;text-decoration:none;';
+    a.textContent='💌 Mời';
+    a.href='sms:'+sdt+'?body='+encodeURIComponent(TIN_MOI_HIEN);
+    row.appendChild(a);
+    return row;
+  }
   document.addEventListener('DOMContentLoaded', function(){
     var btn=$('btnQuenDanhBa'); if(!btn) return;
     btn.addEventListener('click', function(){
-      var loi=$('loiQuenDanhBa'), ds=$('dsQuenDanhBa'), trong=$('trongQuenDanhBa');
+      var loi=$('loiQuenDanhBa'), ds=$('dsQuenDanhBa'), dsMoi=$('dsMoiDanhBa'), trong=$('trongQuenDanhBa');
       loi.textContent='';
       if(!('contacts' in navigator)||!navigator.contacts||!navigator.contacts.select){
         loi.textContent='Trình duyệt này không hỗ trợ đọc danh bạ. Hãy mở HIALO bằng Chrome trên điện thoại Android.';
@@ -979,24 +1003,30 @@ if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").ca
         });
         var cacSo=Object.keys(mapSo).slice(0,60);
         if(!cacSo.length){ trong.textContent='Không lấy được số hợp lệ nào từ lựa chọn vừa rồi.'; return; }
-        ds.innerHTML=''; trong.textContent='Đang kiểm tra 0/'+cacSo.length+' số…';
-        var thay=0, xong=0;
+        ds.innerHTML=''; dsMoi.innerHTML=''; trong.textContent='Đang kiểm tra 0/'+cacSo.length+' số…';
+        var thay=0, xong=0, chuaDung=[];
         (function tiep(i){
           if(i>=cacSo.length){
-            trong.textContent='Đã kiểm tra '+cacSo.length+' số — thấy '+thay+' người đang dùng HIALO.'+(thay?'':' Các số còn lại chưa dùng HIALO hoặc đã tắt cho phép tìm bằng số điện thoại.');
+            if(chuaDung.length){
+              var hd=document.createElement('p'); hd.className='goiY';
+              hd.textContent='💌 Mời tham gia HIALO — bấm nút Mời bên phải số, tin nhắn đã soạn sẵn, bạn chỉ việc bấm gửi:';
+              dsMoi.appendChild(hd);
+              chuaDung.forEach(function(x){ dsMoi.appendChild(theMoi(x.ten, x.sdt)); });
+            }
+            trong.textContent='Đã kiểm tra '+cacSo.length+' số — '+thay+' người đang dùng HIALO, '+chuaDung.length+' số chưa dùng (xem danh sách Mời ở dưới).';
             return;
           }
           var sdt=cacSo[i];
           api('/api/tim-sdt?sdt='+encodeURIComponent(sdt),'GET',null).then(function(kq){
             xong++; trong.textContent='Đang kiểm tra '+xong+'/'+cacSo.length+' số…';
             if(kq&&kq.ok&&kq.timThay){ thay++; ds.appendChild(theNguoi(kq,mapSo[sdt],sdt)); }
+            else chuaDung.push({ten:mapSo[sdt], sdt:sdt});
             tiep(i+1);
           });
         })(0);
       }).catch(function(){});
     });
   });
-})();
-</script>
+})();</script>
 </body>
 </html>
