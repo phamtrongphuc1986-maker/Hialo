@@ -22,3 +22,4 @@ self.addEventListener('fetch', function (e) {
 
 /* V6: nhom chat + cong dong (05/11/2026) */
 /* V6.2: QR & Tien ich — quet QR, Ma QR cua toi, trang Tien ich, loi tat quet nhanh (05/11/2026) */
+/* kich hoat lai Pages build cho dot V6.2 */
