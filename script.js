@@ -1178,7 +1178,7 @@ if (typeof document !== "undefined") {
           }
           var xemTruocN = "";
           if (g.tinCuoi) {
-            var nguoiGuiCuoi = (sdtCuaToi && g.tinCuoi.tu === sdtCuaToi) ? "Bạn" : (g.tinCuoi.nick || "Ai đó");
+            var nguoiGuiCuoi = (sdtHienTai && g.tinCuoi.tu === sdtHienTai) ? "Bạn" : (g.tinCuoi.nick || "Ai đó");
             xemTruocN = nguoiGuiCuoi + ": " + g.tinCuoi.noiDung;
           } else {
             xemTruocN = "Nhóm mới — hãy gửi tin đầu tiên 👋";
@@ -1647,7 +1647,7 @@ if (typeof document !== "undefined") {
       var nhanVai = tv.vai === "truong" ? " · Trưởng nhóm" : (tv.vai === "pho" ? " · Phó nhóm" : "");
       var cot = document.createElement("div");
       cot.className = "cotNutThanhVien";
-      if (tv.sdt !== sdtCuaToi) {
+      if (tv.sdt !== sdtHienTai) {
         if (vaiCuaToi === "truong") {
           var bTruong = document.createElement("button");
           bTruong.type = "button";
@@ -1681,7 +1681,7 @@ if (typeof document !== "undefined") {
           cot.appendChild(bXoaP);
         }
       }
-      var the = taoTheNguoi(tv.emoji, tv.nick || tv.sdt, (tv.sdt === sdtCuaToi ? "Bạn" : "Thành viên") + nhanVai, cot.childNodes.length ? cot : null);
+      var the = taoTheNguoi(tv.emoji, tv.nick || tv.sdt, (tv.sdt === sdtHienTai ? "Bạn" : "Thành viên") + nhanVai, cot.childNodes.length ? cot : null);
       hop.appendChild(the);
     });
 
