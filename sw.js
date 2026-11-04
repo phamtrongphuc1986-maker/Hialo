@@ -19,3 +19,5 @@ self.addEventListener('fetch', function (e) {
     }).catch(function () { return caches.match(e.request); })
   );
 });
+
+/* V6: nhom chat + cong dong (05/11/2026) */
