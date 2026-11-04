@@ -1,15 +1,1 @@
-{
-  "name": "Hialo",
-  "short_name": "Hialo",
-  "description": "Hialo — nhắn tin, gọi điện miễn phí và tìm bạn quanh đây.",
-  "lang": "vi",
-  "start_url": ".",
-  "scope": ".",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0b5fa5",
-  "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
-  ]
-}
+{"background_color":"#ffffff","description":"Hialo — nhắn tin, gọi điện miễn phí và tìm bạn quanh đây.","display":"standalone","icons":[{"sizes":"192x192","src":"icon-192.png","type":"image/png"},{"purpose":"any maskable","sizes":"512x512","src":"icon-512.png","type":"image/png"}],"id":".","lang":"vi","name":"Hialo","scope":".","short_name":"Hialo","shortcuts":[{"description":"Mở ngay trình quét mã QR của HIALO","icons":[{"sizes":"192x192","src":"icon-192.png","type":"image/png"}],"name":"Quét mã nhanh","short_name":"Quét QR","url":"/?quetqr=1"}],"start_url":".","theme_color":"#0b5fa5"}

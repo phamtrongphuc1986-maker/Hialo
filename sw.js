@@ -1,5 +1,5 @@
 /* Hialo service worker: network-first cho file cùng nguồn (trang luôn mới khi có mạng). */
-var TEN_CACHE = 'hialo-v2';
+var TEN_CACHE = 'hialo-v3';
 self.addEventListener('install', function (e) { self.skipWaiting(); });
 self.addEventListener('activate', function (e) {
   e.waitUntil(
@@ -21,3 +21,4 @@ self.addEventListener('fetch', function (e) {
 });
 
 /* V6: nhom chat + cong dong (05/11/2026) */
+/* V6.2: QR & Tien ich — quet QR, Ma QR cua toi, trang Tien ich, loi tat quet nhanh (05/11/2026) */

@@ -744,3 +744,34 @@ html.toi .mucMenuCong { color: #f3f4f6; }
 html.toi .mucMenuCong:active { background: #2b2130; }
 html.toi .dongChonBanBe { border-bottom-color: #262c3d; }
 html.toi .tenNguoiGuiTrongNhom { color: #c4b5fd; }
+
+/* ===== V6.2: QR & TIỆN ÍCH ===== */
+.oMenuCong { display: flex; gap: 8px; align-items: center; }
+.oMenuCong #btnQuetQR { font-size: 17px; line-height: 1; min-width: 48px; }
+.mucMenuCong.mo { opacity: 0.55; }
+.nhanSapCo { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: #f59e0b; color: #fff; font-size: 11px; font-weight: 700; vertical-align: middle; }
+.lopPhuQuet { position: fixed; inset: 0; z-index: 300; background: #fff; padding: 16px; overflow-y: auto; }
+.dauQuet { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.dauQuet h3 { margin: 0; }
+.khungCameraQuet { margin-top: 12px; }
+.khungCameraQuet video { width: 100%; max-height: 60vh; background: #111; border-radius: 12px; object-fit: cover; }
+.hangNutQuet { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.hopKetQuaQR { margin-top: 14px; border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; background: #f9fafb; }
+.tieuDeKetQuaQR { font-weight: 700; margin: 0 0 6px; font-size: 16.5px; }
+.noiDungKetQuaQR { margin: 0; word-break: break-all; font-size: 15.5px; }
+.hopMaQR { text-align: center; margin: 14px 0; }
+#canvasMaQR { width: min(264px, 78vw); height: auto; image-rendering: pixelated; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+.linkTrongChat { color: #0b5fa5; text-decoration: underline; word-break: break-all; }
+.theNganHangTrongChat { margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(120, 120, 120, 0.5); }
+.dongTheNganHang { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 4px; font-size: 14.5px; }
+.chipQRTrongAnh { display: inline-block; margin-top: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid #0b5fa5; background: #eef6fd; color: #0b5fa5; font-size: 14px; cursor: pointer; }
+.dongQuyen { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 0; border-bottom: 1px solid #f1f2f4; }
+.dongQuyen .tenQuyen { font-weight: 600; }
+.dongQuyen .tenQuyen small { font-weight: 400; color: #6b7280; }
+.trangThaiQuyen { flex: 1; min-width: 120px; font-size: 14px; color: #4b5563; }
+html.toi .lopPhuQuet { background: #101319; }
+html.toi .hopKetQuaQR { background: #1b1f2a; border-color: #262c3d; }
+html.toi .linkTrongChat { color: #93c5fd; }
+html.toi .chipQRTrongAnh { background: #16283a; color: #93c5fd; border-color: #2563eb; }
+html.toi .dongQuyen { border-bottom-color: #262c3d; }
+html.toi .trangThaiQuyen { color: #c8cdd6; }

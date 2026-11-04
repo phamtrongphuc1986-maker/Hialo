@@ -141,6 +141,7 @@
           <button type="button" class="mucMenu" data-mo-trang="trangCdCuocGoi"><span class="iconMenu">📞</span><span class="chuMenu"><strong>Cuộc gọi</strong><small>Ai gọi được cho bạn, rung khi có cuộc gọi</small></span><span class="chevronMenu">›</span></button>
           <button type="button" class="mucMenu" data-mo-trang="trangCdTuongNha"><span class="iconMenu">🏠</span><span class="chuMenu"><strong>Tường nhà</strong><small>Ai xem được tường nhà của bạn</small></span><span class="chevronMenu">›</span></button>
           <button type="button" class="mucMenu" data-mo-trang="trangCdDanhBa"><span class="iconMenu">📇</span><span class="chuMenu"><strong>Danh bạ</strong><small>Tìm bạn bằng số điện thoại, cách sắp xếp</small></span><span class="chevronMenu">›</span></button>
+          <button type="button" class="mucMenu" data-mo-trang="trangCdTienIch"><span class="iconMenu">🧰</span><span class="chuMenu"><strong>Tiện ích</strong><small>Mã QR trong ảnh, thẻ ngân hàng, cách mở link</small></span><span class="chevronMenu">›</span></button>
           <button type="button" class="mucMenu" data-mo-trang="trangGiaoDien"><span class="iconMenu">🎨</span><span class="chuMenu"><strong>Giao diện và ngôn ngữ</strong><small>Sáng / tối, ngôn ngữ hiển thị</small></span><span class="chevronMenu">›</span></button>
           <button type="button" class="mucMenu" data-mo-trang="trangThongTin"><span class="iconMenu">ℹ️</span><span class="chuMenu"><strong>Thông tin về Hialo</strong><small>Phiên bản và giới thiệu ứng dụng</small></span><span class="chevronMenu">›</span></button>
           <button type="button" class="mucMenu" data-mo-trang="trangHoTro"><span class="iconMenu">🆘</span><span class="chuMenu"><strong>Liên hệ hỗ trợ</strong><small>Email hỗ trợ và câu hỏi thường gặp</small></span><span class="chevronMenu">›</span></button>
@@ -168,6 +169,34 @@
             <span><strong>Hiện giờ dưới mỗi tin nhắn</strong></span>
           </label>
           <p class="giaiThich">Tắt đi nếu muốn khung trò chuyện gọn hơn.</p>
+        </div>
+      </div>
+
+      <!-- ===== V6.2: CÀI ĐẶT — TIỆN ÍCH (QR & MỞ LINK) ===== -->
+      <div class="trangCon an" id="trangCdTienIch">
+        <div class="dauTrangCon">
+          <button type="button" class="nutPhu nho" data-quay-lai="trangCaiDat">←</button>
+          <h3>Tiện ích</h3>
+        </div>
+        <div class="congTac khongVienTren">
+          <label class="hangCongTac" for="chkQrTuDongTrongAnh">
+            <input type="checkbox" id="chkQrTuDongTrongAnh">
+            <span><strong>Tự nhận diện mã QR trong ảnh</strong></span>
+          </label>
+          <p class="giaiThich">Khi mở cuộc trò chuyện, Hialo tự kiểm tra các ảnh trong cuộc trò chuyện đó: nếu ảnh chứa mã QR sẽ hiện một thẻ nhỏ dưới ảnh để bạn xem nội dung hoặc lưu vào Ví QR. Chỉ quét ảnh của cuộc trò chuyện đang mở, ngay trên máy của bạn. Mặc định tắt.</p>
+        </div>
+        <div class="congTac">
+          <label class="hangCongTac" for="chkQrTheNganHang">
+            <input type="checkbox" id="chkQrTheNganHang" checked>
+            <span><strong>Hiện thẻ QR khi tin nhắn nhắc tài khoản ngân hàng</strong></span>
+          </label>
+          <p class="giaiThich">Nếu một tin nhắn có nhắc tên ngân hàng / ví điện tử kèm số tài khoản, Hialo gắn thẻ nhỏ dưới tin nhắn để bạn sao chép số tài khoản hoặc lưu vào Ví QR, đỡ phải gõ lại.</p>
+        </div>
+        <div class="congTac">
+          <p class="giaiThich"><strong>Cách mở link trong tin nhắn</strong></p>
+          <label class="oGioi"><input type="radio" name="moLink" value="trinh-duyet"> 🌐 Mở bằng trình duyệt</label>
+          <label class="oGioi"><input type="radio" name="moLink" value="trong-app"> 📱 Mở ngay trong Hialo</label>
+          <p class="giaiThich">Mở trong Hialo: link mở ngay trong cửa sổ ứng dụng. Mở bằng trình duyệt: link được đưa sang trình duyệt của máy.</p>
         </div>
       </div>
 
@@ -335,6 +364,34 @@
         <h3 class="tieuDeCon">🚫 Danh sách chặn</h3>
         <div id="dsChanCaNhan" class="danhSach"></div>
         <p class="goiY" id="trongChan">Bạn chưa chặn ai.</p>
+
+        <h3 class="tieuDeCon">🧩 Quyền của tiện ích và ứng dụng</h3>
+        <p class="giaiThich">Hialo chạy trong trình duyệt nên các quyền dưới đây do trình duyệt cấp. Hialo chỉ xem được trạng thái — muốn thu hồi quyền, bạn mở cài đặt trang web của trình duyệt (chạm ổ khóa trên thanh địa chỉ).</p>
+        <div class="dongQuyen">
+          <span class="tenQuyen">📷 Camera <small>(quét QR, gọi video)</small></span>
+          <span class="trangThaiQuyen" id="quyenCamera">Đang kiểm tra…</span>
+          <button type="button" class="nutPhu nho an" id="btnThuQuyenCamera">Thử cấp quyền</button>
+        </div>
+        <div class="dongQuyen">
+          <span class="tenQuyen">🎤 Micro <small>(gọi điện, ghi âm)</small></span>
+          <span class="trangThaiQuyen" id="quyenMicro">Đang kiểm tra…</span>
+          <button type="button" class="nutPhu nho an" id="btnThuQuyenMicro">Thử cấp quyền</button>
+        </div>
+        <div class="dongQuyen">
+          <span class="tenQuyen">📍 Vị trí <small>(tìm quanh đây)</small></span>
+          <span class="trangThaiQuyen" id="quyenViTri">Đang kiểm tra…</span>
+          <button type="button" class="nutPhu nho an" id="btnThuQuyenViTri">Thử cấp quyền</button>
+        </div>
+        <div class="dongQuyen">
+          <span class="tenQuyen">🔔 Thông báo</span>
+          <span class="trangThaiQuyen" id="quyenThongBao">Đang kiểm tra…</span>
+          <button type="button" class="nutPhu nho an" id="btnThuQuyenThongBao">Thử cấp quyền</button>
+        </div>
+        <div class="dongQuyen">
+          <span class="tenQuyen">🔳 Tự nhận diện QR trong ảnh chat</span>
+          <span class="trangThaiQuyen" id="trangThaiQrTuDong">—</span>
+          <button type="button" class="nutPhu nho" data-mo-trang="trangCdTienIch">Mở Tiện ích</button>
+        </div>
       </div>
 
       <!-- ===== V5.1: TÀI KHOẢN VÀ BẢO MẬT ===== -->
@@ -414,6 +471,25 @@
         <h3 class="tieuDeCon">🔳 Mục đã lưu trong ví</h3>
         <div id="dsViQR" class="danhSach"></div>
         <p class="goiY an" id="trongViQR">Ví QR đang trống.</p>
+      </div>
+
+      <!-- ===== V6.2: MÃ QR CỦA TÔI ===== -->
+      <div class="trangCon an" id="trangMaQRCuaToi">
+        <div class="dauTrangCon">
+          <button type="button" class="nutPhu nho" data-quay-lai="hub">←</button>
+          <h3>Mã QR của tôi</h3>
+        </div>
+        <p class="moTa">Cho bạn bè quét mã này (bằng Hialo hoặc camera thường) để mở trang kết bạn với bạn — không cần đọc số điện thoại.</p>
+        <div class="hopMaQR">
+          <canvas id="canvasMaQR" width="264" height="264"></canvas>
+          <p class="tenNguoi" id="nickMaQR"></p>
+          <p class="moTa" id="sdtMaQR"></p>
+        </div>
+        <div class="hangHaiNut">
+          <button type="button" id="btnLuuAnhQR" class="nutPhu">💾 Lưu ảnh</button>
+          <button type="button" id="btnChiaSeQR" class="nutPhu">📤 Chia sẻ</button>
+        </div>
+        <p class="giaiThich">Lưu ý: mã chứa link kèm số điện thoại của bạn. Nếu bạn đã tắt "Cho phép tìm tôi bằng số điện thoại" trong Quyền riêng tư, người quét mã sẽ không tìm thấy bạn — đó là do cài đặt riêng tư của bạn, không phải mã hỏng.</p>
       </div>
 
       <!-- ===== V5.1: DỮ LIỆU LƯU TRỮ ===== -->
@@ -630,9 +706,14 @@
       <div class="hangDauTinNhan">
         <h2>💬 Tin nhắn</h2>
         <div class="oMenuCong">
+          <button type="button" id="btnQuetQR" class="nutPhu nho" title="Quét mã QR">🔳</button>
           <button type="button" id="btnMenuCong" class="nutPhu nho" title="Thêm mới">＋</button>
           <div id="menuCong" class="menuCong an">
             <button type="button" id="mucTaoNhom" class="mucMenuCong">👥 Tạo nhóm</button>
+            <button type="button" id="mucThemBan" class="mucMenuCong">➕ Thêm bạn</button>
+            <button type="button" id="mucQuetQRMenu" class="mucMenuCong">🔳 Quét mã QR</button>
+            <button type="button" id="mucGoiNhom" class="mucMenuCong mo">📞 Tạo cuộc gọi nhóm <span class="nhanSapCo">Sắp có</span></button>
+            <button type="button" id="mucMaQR" class="mucMenuCong">🪪 Mã QR của tôi</button>
           </div>
         </div>
       </div>
@@ -780,6 +861,29 @@
   <button type="button" class="tabBtn" data-tab="canhan"><span class="tabIcon">👤</span><span class="tabNhan">Cá nhân</span></button>
 </nav>
 
+<!-- ===== V6.2: MÀN QUÉT MÃ QR ===== -->
+<div id="manQuetQR" class="lopPhuQuet an" role="dialog" aria-label="Quét mã QR">
+  <div class="dauQuet">
+    <h3>🔳 Quét mã QR</h3>
+    <button type="button" id="btnDongQuetQR" class="nutPhu nho">✕ Đóng</button>
+  </div>
+  <div class="khungCameraQuet">
+    <video id="videoQuetQR" playsinline muted></video>
+    <p class="goiY an" id="nhanKhongCamera">Không mở được camera. Bạn vẫn có thể quét từ ảnh có sẵn trong máy.</p>
+  </div>
+  <canvas id="canvasQuetQR" class="an"></canvas>
+  <div class="hangNutQuet">
+    <button type="button" id="btnQuetTuAnh" class="nutPhu">🖼 Quét từ ảnh</button>
+    <button type="button" id="btnDenPinQR" class="nutPhu an">🔦 Đèn pin</button>
+  </div>
+  <input type="file" id="inpAnhQuetQR" accept="image/*" class="an">
+  <div id="hopKetQuaQR" class="hopKetQuaQR an">
+    <p class="tieuDeKetQuaQR" id="tieuDeKetQuaQR"></p>
+    <p class="noiDungKetQuaQR" id="noiDungKetQuaQR"></p>
+    <div class="hangNutQuet" id="hangNutKetQuaQR"></div>
+  </div>
+</div>
+
 <div id="toast" class="toast an" role="status"></div>
 
 <!-- ===== V5: HỘP CUỘC GỌI ĐẾN ===== -->
@@ -827,6 +931,8 @@
 <!-- ===== V5.1: audio phát nhạc chuông hStyle (phát lặp tới khi nghe/từ chối) ===== -->
 <audio id="amNhacChuong" loop preload="auto"></audio>
 
+<script src="jsqr.js"></script>
+<script src="qrcode.js"></script>
 <script src="script.js"></script>
 <script>
 if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").catch(function () {}); }
@@ -997,6 +1103,45 @@ if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").ca
           clearInterval(iv);
           nutTab.click();
           inp.value = goi;
+          setTimeout(function () { try { nutTim.click(); } catch (e) {} }, 600);
+          try { history.replaceState(null, '', location.pathname); } catch (e) {}
+        } else if (lan > 40) clearInterval(iv);
+      } catch (e) { clearInterval(iv); }
+    }, 1500);
+  } catch (e) {}
+})();
+</script>
+
+<script>
+// ===== V6.2: Deep link QR: ?ketban=<sdt> -> mo tab Danh ba + tu tim so do; ?quetqr=1 -> mo trinh quet QR =====
+(function () {
+  try {
+    var qs = new URLSearchParams(location.search);
+    var ketban = qs.get('ketban');
+    var moQuet = qs.get('quetqr') === '1' || qs.get('mo') === 'quet-qr';
+    if (ketban) ketban = String(ketban).replace(/[^0-9+]/g, '');
+    if (!ketban && !moQuet) return;
+    var lan = 0;
+    var iv = setInterval(function () {
+      lan++;
+      try {
+        var nutTab = document.querySelector('.tabBtn[data-tab="danhba"]');
+        var daVaoApp = nutTab && nutTab.offsetParent !== null;
+        if (!daVaoApp) { if (lan > 40) clearInterval(iv); return; }
+        if (moQuet) {
+          var nutQuet = document.getElementById('btnQuetQR');
+          if (!nutQuet) { if (lan > 40) clearInterval(iv); return; }
+          clearInterval(iv);
+          nutQuet.click();
+          try { history.replaceState(null, '', location.pathname); } catch (e) {}
+          return;
+        }
+        var inp = document.getElementById('inpTimSdt');
+        var nutTim = document.getElementById('btnTimSdt');
+        if (inp && nutTim) {
+          clearInterval(iv);
+          nutTab.click();
+          inp.value = ketban;
           setTimeout(function () { try { nutTim.click(); } catch (e) {} }, 600);
           try { history.replaceState(null, '', location.pathname); } catch (e) {}
         } else if (lan > 40) clearInterval(iv);

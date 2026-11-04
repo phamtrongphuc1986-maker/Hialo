@@ -387,7 +387,8 @@ if (typeof document !== "undefined") {
     else if (ten === "trangDuLieu") taiLuuTru();
     else if (ten === "trangHCloud") taiDamMay();
     else if (ten === "trangTaiKhoan") taiThongTinTaiKhoan();
-    else if (ten === "trangRiengTu") { taiCaiDat(); taiDsChanCaNhan(); }
+    else if (ten === "trangRiengTu") { taiCaiDat(); taiDsChanCaNhan(); taiQuyenTienIch(); }
+    else if (ten === "trangMaQRCuaToi") veMaQRCuaToi();
     else if (ten === "trangCaiDat" || ten.indexOf("trangCd") === 0 || ten === "trangGiaoDien" || ten === "trangHStyle") taiCaiDat();
   }
 
@@ -1271,6 +1272,7 @@ if (typeof document !== "undefined") {
       img.alt = t.tenTep || "Ảnh";
       img.addEventListener("click", function () { window.open(duongDanTep(t.tepId), "_blank"); });
       bong.appendChild(img);
+      lichQuetQRTrongAnh(t.tepId, bong);
     } else if (kieu === "thoai" && t.tepId) {
       // V5: tin nhắn thoại — phát bằng thẻ audio ngay trong bong bóng
       var au = document.createElement("audio");
@@ -1317,7 +1319,7 @@ if (typeof document !== "undefined") {
       spXoa.textContent = "🗑️ Tệp đã bị xóa khỏi máy chủ";
       bong.appendChild(spXoa);
     } else {
-      bong.textContent = t.noiDung;
+      trangTriTinVanBan(bong, t.noiDung || "");
     }
     var gio = document.createElement("div");
     gio.className = "gioTin";
@@ -1434,7 +1436,7 @@ if (typeof document !== "undefined") {
     }
     var bong = document.createElement("div");
     bong.className = "bongBong";
-    bong.textContent = t.noiDung;
+    trangTriTinVanBan(bong, t.noiDung || "");
     dong.appendChild(bong);
     var gio = document.createElement("span");
     gio.className = "gioNho";
@@ -1788,6 +1790,637 @@ if (typeof document !== "undefined") {
         dongManChatNhom(true);
       });
     });
+  });
+
+  // ================= V6.2: QR & TIỆN ÍCH (quét QR, mã QR của tôi, thẻ ngân hàng, cách mở link) =================
+  // Động cơ giải mã: BarcodeDetector (Chrome Android, có sẵn trong máy) trước; dự phòng jsQR
+  // đóng gói cục bộ (jsqr.js). Sinh mã QR cá nhân: qrcode.js (Arase, MIT) vẽ ra canvas.
+  // KHÔNG thêm endpoint máy chủ nào: lưu QR dùng lại POST /api/vi-qr (loai "noi-dung").
+
+  var qrStream = null;          // luồng camera đang mở ở màn quét
+  var qrTrack = null;           // track video (để bật đèn pin)
+  var qrVongLap = null;         // id timeout của vòng quét camera
+  var qrDangMo = false;         // màn quét đang mở
+  var qrPhatHienXong = false;   // đã có kết quả trong lần mở này (dừng quét, chờ thao tác)
+  var qrDenPinDangBat = false;
+  var qrDetector = null;        // BarcodeDetector dùng chung
+  var qrCacheAnh = {};          // tepId -> chuỗi QR ("" = đã quét, không có mã) — nhớ trong phiên
+  var qrHangDoiAnh = [];        // hàng đợi quét ảnh chat: [{tepId, bong}]
+  var qrDangQuetAnh = false;    // khóa: 1 ảnh tại một thời điểm
+
+  function layDetector() {
+    if (typeof window === "undefined" || !("BarcodeDetector" in window)) return null;
+    if (!qrDetector) {
+      try { qrDetector = new window.BarcodeDetector({ formats: ["qr_code"] }); }
+      catch (e) { qrDetector = null; }
+    }
+    return qrDetector;
+  }
+
+  // Giải mã QR từ một nguồn ảnh (video / canvas / ImageBitmap). Trả Promise<chuỗi|null>.
+  function giaiMaQR(nguon) {
+    var det = layDetector();
+    if (det) {
+      return det.detect(nguon)
+        .then(function (ds) { return (ds && ds.length && ds[0].rawValue) ? String(ds[0].rawValue) : null; })
+        .catch(function () { return giaiMaBangJsQR(nguon); });
+    }
+    return Promise.resolve().then(function () { return giaiMaBangJsQR(nguon); });
+  }
+
+  function giaiMaBangJsQR(nguon) {
+    try {
+      if (typeof jsQR !== "function") return null;
+      var cv = $("canvasQuetQR");
+      if (!cv) return null;
+      var w = nguon.videoWidth || nguon.width || 0;
+      var h = nguon.videoHeight || nguon.height || 0;
+      if (!w || !h) return null;
+      // Thu nhỏ về tối đa 1000px/chiều cho giải mã nhanh (đo thực tế: ~0,1–0,3 giây/ảnh sạch)
+      var tiLe = Math.min(1, 1000 / Math.max(w, h));
+      cv.width = Math.max(1, Math.round(w * tiLe));
+      cv.height = Math.max(1, Math.round(h * tiLe));
+      var ctx = cv.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(nguon, 0, 0, cv.width, cv.height);
+      var imgData = ctx.getImageData(0, 0, cv.width, cv.height);
+      var kq = jsQR(imgData.data, cv.width, cv.height, { inversionAttempts: "attemptBoth" });
+      return (kq && kq.data) ? kq.data : null;
+    } catch (e) { return null; }
+  }
+
+  function giaiMaQRTuTep(file) {
+    if (!file || !window.createImageBitmap) return Promise.resolve(null);
+    return createImageBitmap(file)
+      .then(function (bmp) { return giaiMaQR(bmp); })
+      .catch(function () { return null; });
+  }
+
+  // ---------- Màn hình quét QR ----------
+  function moManQuetQR() {
+    qrDangMo = true;
+    qrPhatHienXong = false;
+    qrDenPinDangBat = false;
+    $("manQuetQR").classList.remove("an");
+    $("hopKetQuaQR").classList.add("an");
+    $("nhanKhongCamera").classList.add("an");
+    batCameraQR();
+  }
+
+  function dongManQuetQR() {
+    qrDangMo = false;
+    dungCameraQR();
+    $("manQuetQR").classList.add("an");
+  }
+
+  function dungCameraQR() {
+    if (qrVongLap) { clearTimeout(qrVongLap); qrVongLap = null; }
+    if (qrStream) {
+      qrStream.getTracks().forEach(function (t) { t.stop(); });
+      qrStream = null;
+      qrTrack = null;
+    }
+    var v = $("videoQuetQR");
+    if (v) v.srcObject = null;
+    var nutPin = $("btnDenPinQR");
+    if (nutPin) nutPin.classList.add("an");
+  }
+
+  function batCameraQR() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      $("nhanKhongCamera").classList.remove("an");
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
+      .then(function (stream) {
+        if (!qrDangMo) { stream.getTracks().forEach(function (t) { t.stop(); }); return; }
+        qrStream = stream;
+        qrTrack = stream.getVideoTracks()[0] || null;
+        var v = $("videoQuetQR");
+        v.srcObject = stream;
+        if (v.play) v.play().catch(function () {});
+        try {
+          var caps = (qrTrack && qrTrack.getCapabilities) ? qrTrack.getCapabilities() : null;
+          if (caps && caps.torch) $("btnDenPinQR").classList.remove("an");
+        } catch (e) {}
+        vongQuetCamera();
+      })
+      .catch(function () { $("nhanKhongCamera").classList.remove("an"); });
+  }
+
+  function vongQuetCamera() {
+    if (!qrDangMo || qrPhatHienXong) return;
+    var video = $("videoQuetQR");
+    if (video && video.readyState >= 2) {
+      giaiMaQR(video).then(function (chuoi) {
+        if (!qrDangMo || qrPhatHienXong) return;
+        if (chuoi) {
+          qrPhatHienXong = true;
+          dungCameraQR();
+          hienKetQuaQR(chuoi);
+        } else {
+          qrVongLap = setTimeout(vongQuetCamera, 300);
+        }
+      });
+    } else {
+      qrVongLap = setTimeout(vongQuetCamera, 300);
+    }
+  }
+
+  function batTatDenPinQR() {
+    if (!qrTrack || !qrTrack.applyConstraints) return;
+    qrDenPinDangBat = !qrDenPinDangBat;
+    qrTrack.applyConstraints({ advanced: [{ torch: qrDenPinDangBat }] })
+      .catch(function () { qrDenPinDangBat = false; });
+  }
+
+  function quetTuAnhSuKien(file) {
+    if (!file) return;
+    giaiMaQRTuTep(file).then(function (chuoi) {
+      if (chuoi) {
+        qrPhatHienXong = true;
+        dungCameraQR();
+        hienKetQuaQR(chuoi);
+      } else {
+        hienToast("Không tìm thấy mã QR trong ảnh này.");
+      }
+    });
+  }
+
+  // ---------- Phân loại kết quả quét ----------
+  function chuanSdtVN(s) {
+    var d = String(s || "").replace(/[^0-9]/g, "");
+    if (d.length === 11 && d.indexOf("84") === 0) d = "0" + d.slice(2);
+    return /^0[0-9]{9}$/.test(d) ? d : null;
+  }
+
+  function tachSdtKetBan(chuoi) {
+    // Link Hialo kèm ?ketban= / ?goi= -> SĐT đích; chuỗi CHỈ gồm SĐT thuần cũng coi là mã kết bạn
+    // (chuỗi dạng khác — kể cả URL lạ chứa số — để dành cho nhánh link/nội dung ở dưới)
+    if (chuoi.indexOf("hialo.vn") !== -1) {
+      var m = chuoi.match(/[?&](?:ketban|goi)=([0-9+]+)/);
+      if (m) return chuanSdtVN(m[1]);
+    }
+    if (/^\+?[0-9][0-9 ]{8,14}$/.test(chuoi.trim())) return chuanSdtVN(chuoi);
+    return null;
+  }
+
+  function moKetBanTuSDT(sdt) {
+    dongManQuetQR();
+    chonTab("danhba");
+    var inp = $("inpTimSdt");
+    if (inp) inp.value = sdt;
+    setTimeout(function () { var n = $("btnTimSdt"); if (n) n.click(); }, 600);
+  }
+
+  function saoChepChuoi(chuoi) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(chuoi).then(
+        function () { hienToast("Đã sao chép 📋"); },
+        function () { hienToast("Không sao chép tự động được."); }
+      );
+    } else {
+      hienToast("Trình duyệt không hỗ trợ sao chép tự động.");
+    }
+  }
+
+  function luuVaoViQR(ten, noiDung) {
+    goiAPI("/api/vi-qr", "POST", { ten: ten, loai: "noi-dung", noiDung: noiDung }, true).then(function (kq) {
+      if (!kq.ok) { hienToast(kq.loi || "Chưa lưu được vào Ví QR."); return; }
+      hienToast("Đã lưu vào Ví QR 🔳");
+    });
+  }
+
+  function moLienKet(url) {
+    if (caiDatHT && caiDatHT.moLink === "trong-app") location.assign(url);
+    else window.open(url, "_blank", "noopener");
+  }
+
+  // Bóc tách VietQR (EMVCo): trường 38 -> GUID A000000727 + (BIN 6 số + STK)
+  var BANG_BIN = {
+    "970418": "BIDV", "970436": "Vietcombank", "970422": "MB Bank", "970407": "Techcombank",
+    "970415": "VietinBank", "970405": "Agribank", "970416": "ACB", "970432": "VPBank",
+    "970403": "Sacombank", "970423": "TPBank", "970437": "HDBank", "970440": "SeABank",
+    "970441": "VIB", "970443": "SHB", "970431": "Eximbank", "970426": "MSB",
+    "970448": "OCB", "970449": "LienVietPostBank", "970428": "Nam A Bank", "970452": "KienlongBank"
+  };
+
+  function docTLV(chuoi, ketThuc) {
+    var ra = {};
+    var i = 0;
+    while (i + 4 <= ketThuc) {
+      var id = chuoi.substr(i, 2);
+      var dai = parseInt(chuoi.substr(i + 2, 2), 10);
+      if (isNaN(dai) || i + 4 + dai > ketThuc) break;
+      ra[id] = chuoi.substr(i + 4, dai);
+      i += 4 + dai;
+    }
+    return ra;
+  }
+
+  function tachVietQR(chuoi) {
+    try {
+      var goc = docTLV(chuoi, chuoi.length);
+      var f38 = goc["38"];
+      if (!f38) return null;
+      var con = docTLV(f38, f38.length);
+      if (con["00"] !== "A000000727") return null;
+      var binStk = con["01"] || "";
+      var bin = binStk.slice(0, 6);
+      var stk = binStk.slice(6);
+      if (!stk) return null;
+      return { bin: bin, stk: stk, nganHang: BANG_BIN[bin] || ("Ngân hàng BIN " + bin) };
+    } catch (e) { return null; }
+  }
+
+  function hienKetQuaQR(chuoiTho) {
+    var chuoi = String(chuoiTho || "").trim();
+    if (!chuoi) return;
+    if (!qrDangMo) {
+      // Mở màn ở chế độ xem kết quả (không bật camera) — đường vào từ thẻ QR trong ảnh chat
+      qrDangMo = true;
+      $("manQuetQR").classList.remove("an");
+      $("nhanKhongCamera").classList.add("an");
+    }
+    qrPhatHienXong = true;
+    var hop = $("hopKetQuaQR");
+    var tieu = $("tieuDeKetQuaQR");
+    var nd = $("noiDungKetQuaQR");
+    var hangNut = $("hangNutKetQuaQR");
+    hangNut.innerHTML = "";
+    hop.classList.remove("an");
+    function nutNhan(nhan, lop, fn) { hangNut.appendChild(taoNutNhan(nhan, lop, fn)); }
+    function nutQuetTiep() {
+      nutNhan("🔳 Quét tiếp", "nutPhu nho", function () {
+        hop.classList.add("an");
+        qrPhatHienXong = false;
+        batCameraQR();
+      });
+    }
+    function nutDong() { nutNhan("Đóng", "nutPhu nho", function () { dongManQuetQR(); }); }
+
+    var sdtKB = tachSdtKetBan(chuoi);
+    if (sdtKB) {
+      tieu.textContent = "🔳 Mã kết bạn Hialo";
+      nd.textContent = "Số điện thoại: " + sdtKB;
+      nutNhan("👋 Mở trang kết bạn", "nutChinh nho", function () { moKetBanTuSDT(sdtKB); });
+      nutQuetTiep(); nutDong();
+      return;
+    }
+    if (chuoi.indexOf("000201") === 0) {
+      var tt = tachVietQR(chuoi);
+      tieu.textContent = "🏦 Mã VietQR";
+      nd.textContent = tt
+        ? (tt.nganHang + " — Số tài khoản " + tt.stk)
+        : "Không đọc được thông tin ngân hàng trong mã này. Bạn vẫn có thể lưu nguyên nội dung vào Ví QR.";
+      nutNhan("💾 Lưu vào Ví QR", "nutChinh nho", function () {
+        luuVaoViQR(tt ? ("VietQR " + tt.nganHang + " " + tt.stk) : "VietQR", chuoi);
+      });
+      nutQuetTiep(); nutDong();
+      return;
+    }
+    if (/^https?:\/\//i.test(chuoi)) {
+      tieu.textContent = "🔗 Liên kết web";
+      nd.textContent = chuoi;
+      nutNhan("🌐 Mở link", "nutChinh nho", function () {
+        if (window.confirm("Mở liên kết này?\n\n" + chuoi)) moLienKet(chuoi);
+      });
+      nutNhan("📋 Sao chép", "nutPhu nho", function () { saoChepChuoi(chuoi); });
+      nutQuetTiep(); nutDong();
+      return;
+    }
+    tieu.textContent = "📄 Nội dung mã QR";
+    nd.textContent = chuoi;
+    nutNhan("📋 Sao chép", "nutChinh nho", function () { saoChepChuoi(chuoi); });
+    nutNhan("💾 Lưu vào Ví QR", "nutPhu nho", function () { luuVaoViQR("Mã QR đã quét", chuoi); });
+    nutQuetTiep(); nutDong();
+  }
+
+  // ---------- Trang trí tin văn bản: linkify + thẻ ngân hàng ----------
+  // Chữ thường luôn là text node (không chèn HTML thô từ nội dung tin) nên an toàn XSS.
+  function trangTriTinVanBan(bong, noiDung) {
+    var re = /(https?:\/\/[^\s<>"']+)/g;
+    var con = 0;
+    var m;
+    while ((m = re.exec(noiDung)) !== null) {
+      var url = m[1];
+      var duoi = "";
+      while (url.length > 8 && ".,;:!?)".indexOf(url.charAt(url.length - 1)) !== -1) {
+        duoi = url.charAt(url.length - 1) + duoi;
+        url = url.slice(0, -1);
+      }
+      if (m.index > con) bong.appendChild(document.createTextNode(noiDung.slice(con, m.index)));
+      var a = document.createElement("a");
+      a.className = "linkTrongChat";
+      a.href = url;
+      a.textContent = url;
+      a.rel = "noopener";
+      (function (u) {
+        a.addEventListener("click", function (e) { e.preventDefault(); moLienKet(u); });
+      })(url);
+      bong.appendChild(a);
+      if (duoi) bong.appendChild(document.createTextNode(duoi));
+      con = m.index + m[1].length;
+    }
+    if (con < noiDung.length) bong.appendChild(document.createTextNode(noiDung.slice(con)));
+    ganTheNganHang(bong, noiDung);
+  }
+
+  var TU_KHOA_NGAN_HANG = [
+    ["bidv", "BIDV"], ["vietcombank", "Vietcombank"], ["vcb", "Vietcombank"],
+    ["mb bank", "MB Bank"], ["mbbank", "MB Bank"], ["techcombank", "Techcombank"],
+    ["vietinbank", "VietinBank"], ["agribank", "Agribank"], ["acb", "ACB"],
+    ["vpbank", "VPBank"], ["sacombank", "Sacombank"], ["tpbank", "TPBank"],
+    ["ocb", "OCB"], ["hdbank", "HDBank"], ["seabank", "SeABank"], ["vib", "VIB"],
+    ["shb", "SHB"], ["eximbank", "Eximbank"], ["msb", "MSB"],
+    ["momo", "MoMo"], ["zalopay", "ZaloPay"], ["shopeepay", "ShopeePay"], ["vnpay", "VNPay"]
+  ];
+
+  // Nhận diện thận trọng: BẮT BUỘC có tên ngân hàng/ví đi kèm một dãy 6–19 chữ số trong cùng tin.
+  function phatHienTheNganHang(noiDung) {
+    if (!noiDung) return null;
+    var thuong = " " + noiDung.toLowerCase() + " ";
+    var tenNH = null;
+    for (var i = 0; i < TU_KHOA_NGAN_HANG.length; i++) {
+      if (thuong.indexOf(TU_KHOA_NGAN_HANG[i][0]) !== -1) { tenNH = TU_KHOA_NGAN_HANG[i][1]; break; }
+    }
+    if (!tenNH) return null;
+    var m = noiDung.match(/\d[\d ]{4,20}\d|\d{6,19}/);
+    if (!m) return null;
+    var stk = m[0].replace(/ /g, "");
+    if (stk.length < 6 || stk.length > 19) return null;
+    return { nganHang: tenNH, stk: stk };
+  }
+
+  function ganTheNganHang(bong, noiDung) {
+    if (!caiDatHT || caiDatHT.qrTheNganHang === false) return;
+    var tt = phatHienTheNganHang(noiDung);
+    if (!tt) return;
+    var the = document.createElement("div");
+    the.className = "theNganHangTrongChat";
+    var dong1 = document.createElement("div");
+    dong1.className = "dongTheNganHang";
+    var che = tt.stk.length > 8 ? (tt.stk.slice(0, 4) + "••••" + tt.stk.slice(-4)) : tt.stk;
+    dong1.textContent = "🏦 " + tt.nganHang + " • " + che;
+    the.appendChild(dong1);
+    var dong2 = document.createElement("div");
+    dong2.className = "dongTheNganHang";
+    dong2.appendChild(taoNutNhan("📋 Sao chép STK", "nutPhu nho", function () { saoChepChuoi(tt.stk); }));
+    dong2.appendChild(taoNutNhan("💾 Lưu Ví QR", "nutPhu nho", function () { luuVaoViQR(tt.nganHang + " " + tt.stk, tt.stk); }));
+    the.appendChild(dong2);
+    bong.appendChild(the);
+  }
+
+  // ---------- Tự nhận diện QR trong ảnh chat (chỉ khi user bật công tắc) ----------
+  // Kỷ luật hiệu năng: chỉ ảnh của cuộc trò chuyện đang mở (điểm vẽ tin gọi vào đây),
+  // hàng đợi chạy 1 ảnh/lúc, nhớ kết quả theo tepId trong phiên, không quét lại.
+  function lichQuetQRTrongAnh(tepId, bong) {
+    if (!tepId || !bong) return;
+    if (!caiDatHT || !caiDatHT.qrTuDongTrongAnh) return;
+    if (Object.prototype.hasOwnProperty.call(qrCacheAnh, tepId)) {
+      if (qrCacheAnh[tepId]) ganChipQR(bong, qrCacheAnh[tepId]);
+      return;
+    }
+    qrHangDoiAnh.push({ tepId: tepId, bong: bong });
+    chayHangDoiQuetAnh();
+  }
+
+  function chayHangDoiQuetAnh() {
+    if (qrDangQuetAnh) return;
+    var muc = qrHangDoiAnh.shift();
+    if (!muc) return;
+    qrDangQuetAnh = true;
+    quetAnhChat(muc.tepId).then(function (chuoi) {
+      qrCacheAnh[muc.tepId] = chuoi || "";
+      if (chuoi && muc.bong && document.contains(muc.bong)) ganChipQR(muc.bong, chuoi);
+      qrDangQuetAnh = false;
+      chayHangDoiQuetAnh();
+    });
+  }
+
+  function quetAnhChat(tepId) {
+    var url = duongDanTep(tepId);
+    if (!url || !window.fetch || !window.createImageBitmap) return Promise.resolve(null);
+    return fetch(url)
+      .then(function (r) { return r.blob(); })
+      .then(function (blob) { return createImageBitmap(blob); })
+      .then(function (bmp) { return giaiMaQR(bmp); })
+      .catch(function () { return null; });
+  }
+
+  function ganChipQR(bong, chuoi) {
+    if (bong.querySelector(".chipQRTrongAnh")) return;
+    var chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chipQRTrongAnh";
+    chip.textContent = "🔳 Mã QR — chạm để xem";
+    chip.addEventListener("click", function () { hienKetQuaQR(chuoi); });
+    bong.appendChild(chip);
+  }
+
+  // ---------- Mã QR của tôi ----------
+  function veMaQRCuaToi() {
+    var canvas = $("canvasMaQR");
+    if (!canvas) return;
+    $("nickMaQR").textContent = (me && me.nick) ? me.nick : "";
+    $("sdtMaQR").textContent = sdtHienTai ? ("📱 " + sdtHienTai) : "";
+    if (!sdtHienTai || typeof qrcode !== "function") return;
+    var link = "https://www.hialo.vn/?ketban=" + encodeURIComponent(sdtHienTai);
+    try {
+      var qr = qrcode(0, "M");
+      qr.addData(link);
+      qr.make();
+      var n = qr.getModuleCount();
+      var vungDem = 4;
+      var o = Math.max(2, Math.floor(264 / (n + vungDem * 2)));
+      var kich = (n + vungDem * 2) * o;
+      canvas.width = kich;
+      canvas.height = kich;
+      var ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, kich, kich);
+      ctx.fillStyle = "#000000";
+      for (var r = 0; r < n; r++) {
+        for (var c = 0; c < n; c++) {
+          if (qr.isDark(r, c)) ctx.fillRect((c + vungDem) * o, (r + vungDem) * o, o, o);
+        }
+      }
+    } catch (e) {
+      $("sdtMaQR").textContent = "Không tạo được mã QR trên trình duyệt này.";
+    }
+  }
+
+  function luuAnhMaQR() {
+    var canvas = $("canvasMaQR");
+    if (!canvas || !canvas.toBlob) { hienToast("Trình duyệt không hỗ trợ lưu ảnh."); return; }
+    canvas.toBlob(function (blob) {
+      if (!blob) return;
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "hialo-ma-qr-cua-toi.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+    }, "image/png");
+  }
+
+  function chiaSeMaQR() {
+    var link = "https://www.hialo.vn/?ketban=" + encodeURIComponent(sdtHienTai || "");
+    var canvas = $("canvasMaQR");
+    function chiaSeChu() {
+      if (navigator.share) {
+        navigator.share({ title: "Mã QR Hialo của tôi", text: "Kết bạn với tôi trên HIALO:", url: link }).catch(function () {});
+      } else {
+        saoChepChuoi(link);
+      }
+    }
+    if (canvas && canvas.toBlob && navigator.canShare && navigator.share) {
+      canvas.toBlob(function (blob) {
+        if (!blob) { chiaSeChu(); return; }
+        var file = new File([blob], "hialo-ma-qr.png", { type: "image/png" });
+        var duLieu = { files: [file], title: "Mã QR Hialo của tôi" };
+        if (navigator.canShare(duLieu)) navigator.share(duLieu).catch(function () {});
+        else chiaSeChu();
+      }, "image/png");
+    } else {
+      chiaSeChu();
+    }
+  }
+
+  // ---------- Quyền của tiện ích và ứng dụng (trang Quyền riêng tư) ----------
+  function taiQuyenTienIch() {
+    datTrangThaiQuyen("camera", "quyenCamera", "btnThuQuyenCamera");
+    datTrangThaiQuyen("microphone", "quyenMicro", "btnThuQuyenMicro");
+    datTrangThaiQuyen("geolocation", "quyenViTri", "btnThuQuyenViTri");
+    var elTB = $("quyenThongBao");
+    var nutTB = $("btnThuQuyenThongBao");
+    if (elTB) {
+      if (!("Notification" in window)) {
+        elTB.textContent = "Trình duyệt không hỗ trợ";
+        if (nutTB) nutTB.classList.add("an");
+      } else if (Notification.permission === "granted") {
+        elTB.textContent = "Đã cấp";
+        if (nutTB) nutTB.classList.add("an");
+      } else if (Notification.permission === "denied") {
+        elTB.textContent = "Đã từ chối — mở lại trong cài đặt trang web của trình duyệt";
+        if (nutTB) nutTB.classList.add("an");
+      } else {
+        elTB.textContent = "Chưa cấp";
+        if (nutTB) nutTB.classList.remove("an");
+      }
+    }
+    var ttQr = $("trangThaiQrTuDong");
+    if (ttQr && caiDatHT) ttQr.textContent = caiDatHT.qrTuDongTrongAnh ? "Đang bật" : "Đang tắt";
+  }
+
+  function datTrangThaiQuyen(tenQuyen, idEl, idNut) {
+    var el = $(idEl);
+    var nut = $(idNut);
+    if (!el) return;
+    if (!navigator.permissions || !navigator.permissions.query) {
+      el.textContent = "Xem trong cài đặt trình duyệt";
+      return;
+    }
+    navigator.permissions.query({ name: tenQuyen }).then(function (st) {
+      capNhatDongQuyen(el, nut, st.state);
+      st.onchange = function () { capNhatDongQuyen(el, nut, st.state); };
+    }).catch(function () {
+      el.textContent = "Xem trong cài đặt trình duyệt";
+    });
+  }
+
+  function capNhatDongQuyen(el, nut, trangThai) {
+    if (trangThai === "granted") {
+      el.textContent = "Đã cấp";
+      if (nut) nut.classList.add("an");
+    } else if (trangThai === "denied") {
+      el.textContent = "Đã từ chối — mở lại trong cài đặt trang web của trình duyệt";
+      if (nut) nut.classList.add("an");
+    } else {
+      el.textContent = "Chưa cấp";
+      if (nut) nut.classList.remove("an");
+    }
+  }
+
+  function thuCapQuyen(loai) {
+    if (loai === "camera" || loai === "micro") {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        hienToast("Trình duyệt không hỗ trợ cấp quyền này.");
+        return;
+      }
+      var dk = (loai === "camera") ? { video: true } : { audio: true };
+      navigator.mediaDevices.getUserMedia(dk).then(function (s) {
+        s.getTracks().forEach(function (t) { t.stop(); });
+        hienToast("Đã cấp quyền ✅");
+        taiQuyenTienIch();
+      }).catch(function () {
+        hienToast("Chưa cấp được quyền. Kiểm tra cài đặt trình duyệt nhé.");
+        taiQuyenTienIch();
+      });
+    } else if (loai === "vitri") {
+      if (!navigator.geolocation) { hienToast("Máy không hỗ trợ định vị."); return; }
+      navigator.geolocation.getCurrentPosition(
+        function () { hienToast("Đã cấp quyền vị trí ✅"); taiQuyenTienIch(); },
+        function () { hienToast("Chưa cấp được quyền vị trí."); taiQuyenTienIch(); },
+        { timeout: 10000 }
+      );
+    } else if (loai === "thongbao") {
+      if (!("Notification" in window)) return;
+      Notification.requestPermission().then(function () { taiQuyenTienIch(); });
+    }
+  }
+
+  // ---------- Gắn sự kiện cho gói QR & Tiện ích ----------
+  function anMenuCong() {
+    var m = $("menuCong");
+    if (m) m.classList.add("an");
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var bQuet = $("btnQuetQR");
+    if (bQuet) bQuet.addEventListener("click", function () { moManQuetQR(); });
+    var mQuet = $("mucQuetQRMenu");
+    if (mQuet) mQuet.addEventListener("click", function () { anMenuCong(); moManQuetQR(); });
+    var mThemBan = $("mucThemBan");
+    if (mThemBan) mThemBan.addEventListener("click", function () {
+      anMenuCong();
+      chonTab("danhba");
+      setTimeout(function () { var i = $("inpTimSdt"); if (i) i.focus(); }, 350);
+    });
+    var mGoiNhom = $("mucGoiNhom");
+    if (mGoiNhom) mGoiNhom.addEventListener("click", function () {
+      anMenuCong();
+      hienToast("Tính năng tạo cuộc gọi nhóm sắp có 📞");
+    });
+    var mMaQR = $("mucMaQR");
+    if (mMaQR) mMaQR.addEventListener("click", function () {
+      anMenuCong();
+      chonTab("canhan");
+      moTrangCaNhan("trangMaQRCuaToi");
+    });
+    var bDong = $("btnDongQuetQR");
+    if (bDong) bDong.addEventListener("click", function () { dongManQuetQR(); });
+    var bAnh = $("btnQuetTuAnh");
+    if (bAnh) bAnh.addEventListener("click", function () { $("inpAnhQuetQR").click(); });
+    var inpAnh = $("inpAnhQuetQR");
+    if (inpAnh) inpAnh.addEventListener("change", function () {
+      if (this.files && this.files[0]) quetTuAnhSuKien(this.files[0]);
+      this.value = "";
+    });
+    var bPin = $("btnDenPinQR");
+    if (bPin) bPin.addEventListener("click", function () { batTatDenPinQR(); });
+    var bLuuQR = $("btnLuuAnhQR");
+    if (bLuuQR) bLuuQR.addEventListener("click", function () { luuAnhMaQR(); });
+    var bChiaSe = $("btnChiaSeQR");
+    if (bChiaSe) bChiaSe.addEventListener("click", function () { chiaSeMaQR(); });
+    var qCam = $("btnThuQuyenCamera");
+    if (qCam) qCam.addEventListener("click", function () { thuCapQuyen("camera"); });
+    var qMic = $("btnThuQuyenMicro");
+    if (qMic) qMic.addEventListener("click", function () { thuCapQuyen("micro"); });
+    var qVt = $("btnThuQuyenViTri");
+    if (qVt) qVt.addEventListener("click", function () { thuCapQuyen("vitri"); });
+    var qTb = $("btnThuQuyenThongBao");
+    if (qTb) qTb.addEventListener("click", function () { thuCapQuyen("thongbao"); });
   });
 
   // ================= V5: MEDIA TRONG CHAT (ảnh / tệp / ghi âm) =================
@@ -2475,6 +3108,11 @@ if (typeof document !== "undefined") {
     $("chkTuongChiBanBeRt").checked = c.tuongChiBanBe !== false;
     $("chkTuongThongBao").checked = !!c.tuongThongBao;
     $("selDanhBaSapXep").value = c.danhBaSapXep || "mac-dinh";
+    $("chkQrTuDongTrongAnh").checked = !!c.qrTuDongTrongAnh;
+    $("chkQrTheNganHang").checked = c.qrTheNganHang !== false;
+    datRadio("moLink", c.moLink || "trinh-duyet");
+    var ttQr = $("trangThaiQrTuDong");
+    if (ttQr) ttQr.textContent = c.qrTuDongTrongAnh ? "Đang bật" : "Đang tắt";
     datRadio("giaoDien", c.giaoDien || "sang");
     datRadio("nhacChuong", c.nhacChuong || "mac-dinh");
     nenGoiDenChon = c.nenGoiDen || "mac-dinh";
@@ -2496,6 +3134,9 @@ if (typeof document !== "undefined") {
       tuongChiBanBe: $("chkTuongChiBanBe").checked,
       tuongThongBao: $("chkTuongThongBao").checked,
       danhBaSapXep: $("selDanhBaSapXep").value,
+      qrTuDongTrongAnh: $("chkQrTuDongTrongAnh").checked,
+      qrTheNganHang: $("chkQrTheNganHang").checked,
+      moLink: docRadio("moLink") || "trinh-duyet",
       giaoDien: docRadio("giaoDien") || "sang",
       nhacChuong: docRadio("nhacChuong") || "mac-dinh",
       nenGoiDen: nenGoiDenChon,
@@ -3439,7 +4080,7 @@ if (typeof document !== "undefined") {
     $("btnHuyAm").addEventListener("click", huyAmDaGhi);
     $("btnDangBai").addEventListener("click", dangBaiSuKien);
     ["chkTimBangSDT", "chkLaNhanTin", "chkLaGoi", "chkEnterGui", "chkHienGioTin",
-     "chkRungKhiGoiDen", "chkTuongThongBao"].forEach(function (idCongTac) {
+     "chkRungKhiGoiDen", "chkTuongThongBao", "chkQrTuDongTrongAnh", "chkQrTheNganHang"].forEach(function (idCongTac) {
       $(idCongTac).addEventListener("change", luuCaiDatTuCongTac);
     });
     // V5.1: công tắc "gương" — cùng một khóa cài đặt xuất hiện ở 2 trang, đổi bên nào cũng đồng bộ
@@ -3481,6 +4122,10 @@ if (typeof document !== "undefined") {
         apGiaoDien(this.value);
         luuCaiDatTuCongTac();
       });
+    }
+    var rdMoLink = document.querySelectorAll('input[name="moLink"]');
+    for (var ml = 0; ml < rdMoLink.length; ml++) {
+      rdMoLink[ml].addEventListener("change", luuCaiDatTuCongTac);
     }
     $("selDanhBaSapXep").addEventListener("change", luuCaiDatTuCongTac);
     // hStyle: nhạc chuông (chọn là lưu + nghe thử)
