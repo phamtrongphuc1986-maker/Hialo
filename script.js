@@ -1125,7 +1125,12 @@ if (typeof document !== "undefined") {
   // ---------- Tin nhắn / chat ----------
   function taiDsTroChuyen() {
     if (!TQD_SERVER || !tokenMayChu) return;
-    goiAPI("/api/tin-nhan/danh-sach", "GET", null, true).then(function (kq) {
+    // V6: gộp cả nhóm chat vào danh sách, sắp chung theo thời gian tin cuối
+    Promise.all([
+      goiAPI("/api/tin-nhan/danh-sach", "GET", null, true),
+      goiAPI("/api/nhom/danh-sach", "GET", null, true)
+    ]).then(function (kqs) {
+      var kq = kqs[0], kqN = kqs[1];
       var hop = $("dsTroChuyen");
       hop.innerHTML = "";
       if (!kq.ok) {
@@ -1133,27 +1138,62 @@ if (typeof document !== "undefined") {
         $("trongTroChuyen").classList.remove("an");
         return;
       }
-      var ds = kq.troChuyen || [];
+      var muc = [];
+      (kq.troChuyen || []).forEach(function (c) { muc.push({ laNhom: false, tg: c.tinCuoi.tg, c: c }); });
+      if (kqN && kqN.ok) (kqN.nhom || []).forEach(function (g) {
+        muc.push({ laNhom: true, tg: g.tinCuoi ? g.tinCuoi.tg : g.taoLuc, g: g });
+      });
+      muc.sort(function (a, b) { return b.tg - a.tg; });
       $("trongTroChuyen").textContent = "Chưa có cuộc trò chuyện nào. Vào Danh bạ, chọn một người bạn để nhắn tin nhé.";
-      $("trongTroChuyen").classList.toggle("an", ds.length > 0);
-      ds.forEach(function (c) {
+      $("trongTroChuyen").classList.toggle("an", muc.length > 0);
+      muc.forEach(function (m) {
         var phai = document.createElement("div");
         phai.className = "cotPhai";
         var gio = document.createElement("span");
         gio.className = "gioNho";
-        gio.textContent = dinhDangGio(c.tinCuoi.tg);
         phai.appendChild(gio);
-        if (c.chuaDoc > 0) {
-          var cham = document.createElement("span");
-          cham.className = "chamChuaDoc";
-          cham.textContent = c.chuaDoc;
-          phai.appendChild(cham);
+        if (!m.laNhom) {
+          var c = m.c;
+          gio.textContent = dinhDangGio(c.tinCuoi.tg);
+          if (c.chuaDoc > 0) {
+            var cham = document.createElement("span");
+            cham.className = "chamChuaDoc";
+            cham.textContent = c.chuaDoc;
+            phai.appendChild(cham);
+          }
+          var xemTruoc = (c.tinCuoi.cuaToi ? "Bạn: " : "") + c.tinCuoi.noiDung;
+          var the = taoTheNguoi(c.emoji, c.nick, xemTruoc, phai);
+          the.classList.add("bamDuoc");
+          the.addEventListener("click", function () { moChat(c.sdt, c.nick, c.emoji); });
+          hop.appendChild(the);
+        } else {
+          var g = m.g;
+          gio.textContent = dinhDangGio(m.tg);
+          if (g.chuaDoc > 0) {
+            var chamN = document.createElement("span");
+            chamN.className = "chamChuaDoc";
+            chamN.textContent = g.chuaDoc;
+            phai.appendChild(chamN);
+          }
+          var xemTruocN = "";
+          if (g.tinCuoi) {
+            var nguoiGuiCuoi = (sdtCuaToi && g.tinCuoi.tu === sdtCuaToi) ? "Bạn" : (g.tinCuoi.nick || "Ai đó");
+            xemTruocN = nguoiGuiCuoi + ": " + g.tinCuoi.noiDung;
+          } else {
+            xemTruocN = "Nhóm mới — hãy gửi tin đầu tiên 👋";
+          }
+          if (g.loai === "cong-dong") xemTruocN = "Cộng đồng · " + g.soThanhVien + " thành viên · " + xemTruocN;
+          var theN = taoTheNguoi(g.emoji || "👥", g.ten, xemTruocN, phai);
+          if (g.loai === "cong-dong") {
+            var huy = document.createElement("span");
+            huy.className = "huyHieuCongDong";
+            huy.textContent = "Cộng đồng";
+            theN.querySelector(".tenNguoi").appendChild(huy);
+          }
+          theN.classList.add("bamDuoc");
+          theN.addEventListener("click", function () { moChatNhom(g); });
+          hop.appendChild(theN);
         }
-        var xemTruoc = (c.tinCuoi.cuaToi ? "Bạn: " : "") + c.tinCuoi.noiDung;
-        var the = taoTheNguoi(c.emoji, c.nick, xemTruoc, phai);
-        the.classList.add("bamDuoc");
-        the.addEventListener("click", function () { moChat(c.sdt, c.nick, c.emoji); });
-        hop.appendChild(the);
       });
     });
   }
@@ -1165,6 +1205,13 @@ if (typeof document !== "undefined") {
     capNhatKhungTab();
     $("khuDsTroChuyen").classList.add("an");
     $("manChat").classList.remove("an");
+    // V6: đóng các màn nhóm đang mở dở để không chồng màn hình
+    dungPollChatNhom();
+    nhomDangChat = null;
+    ["manChatNhom", "manTaoNhom", "manThongTinNhom"].forEach(function (id) {
+      var e = $(id);
+      if (e) e.classList.add("an");
+    });
     $("avatarChat").textContent = chatVoi.emoji;
     $("tenChat").textContent = chatVoi.nick || chatVoi.sdt;
     $("sdtChat").textContent = "📱 " + chatVoi.sdt;
@@ -1179,10 +1226,18 @@ if (typeof document !== "undefined") {
 
   function dongManChat(napLaiDs) {
     dungPollChat();
+    dungPollChatNhom(); // V6: dừng poll nhóm khi rời tab Tin nhắn
+    nhomDangChat = null;
     chatVoi = null;
     chatSince = 0;
     var mc = $("manChat");
     if (mc) mc.classList.add("an");
+    // V6: các màn nhóm cũng quay về danh sách
+    ["manChatNhom", "manTaoNhom", "manThongTinNhom"].forEach(function (id) {
+      var e = $(id);
+      if (e) e.classList.add("an");
+    });
+    nhomThongTin = null;
     var ds = $("khuDsTroChuyen");
     if (ds) ds.classList.remove("an");
     if (napLaiDs) taiDsTroChuyen();
@@ -1314,6 +1369,426 @@ if (typeof document !== "undefined") {
       dongManChat(true);
     });
   }
+
+  // ================= V6: NHÓM CHAT + CỘNG ĐỒNG =================
+  // Nhóm thường tối đa 100 thành viên; đủ 100 thì trưởng nhóm (phải còn hạn mức:
+  // tài khoản thường 0, VIP 10) nâng cấp một chiều lên Cộng đồng tối đa 1000.
+  var nhomDangChat = null;      // bản tóm tắt nhóm đang mở (từ danh sách / chi tiết)
+  var nhomChatSince = 0;
+  var idPollChatNhom = null;
+  var nhomThongTin = null;      // chi tiết đầy đủ của nhóm ở màn Thông tin nhóm
+
+  function hienManTinNhan(idMan) {
+    ["khuDsTroChuyen", "manChat", "manChatNhom", "manTaoNhom", "manThongTinNhom"].forEach(function (id) {
+      var el = $(id);
+      if (el) el.classList.toggle("an", id !== idMan);
+    });
+  }
+
+  function dungPollChatNhom() {
+    if (idPollChatNhom) { clearInterval(idPollChatNhom); idPollChatNhom = null; }
+  }
+
+  function capNhatDauChatNhom() {
+    if (!nhomDangChat) return;
+    $("avatarChatNhom").textContent = nhomDangChat.emoji || "👥";
+    $("tenChatNhom").textContent = nhomDangChat.ten || "";
+    $("chiTietChatNhom").textContent = (nhomDangChat.loai === "cong-dong" ? "🌐 Cộng đồng" : "👥 Nhóm thường") +
+      " · " + nhomDangChat.soThanhVien + " thành viên";
+  }
+
+  function moChatNhom(g) {
+    nhomDangChat = g;
+    nhomChatSince = 0;
+    tabDangChon = "tinnhan";
+    capNhatKhungTab();
+    hienManTinNhan("manChatNhom");
+    capNhatDauChatNhom();
+    $("hopTinNhanNhom").innerHTML = "";
+    $("loiChatNhom").textContent = "";
+    $("inpTinNhanNhom").value = "";
+    taiTinNhomMoi();
+    dungPollChatNhom();
+    idPollChatNhom = setInterval(taiTinNhomMoi, 3000);
+    window.scrollTo(0, 0);
+  }
+
+  function dongManChatNhom(napLaiDs) {
+    dungPollChatNhom();
+    nhomDangChat = null;
+    nhomChatSince = 0;
+    nhomThongTin = null;
+    hienManTinNhan("khuDsTroChuyen");
+    if (napLaiDs) taiDsTroChuyen();
+  }
+
+  function themBongBongNhom(t) {
+    var hop = $("hopTinNhanNhom");
+    var dong = document.createElement("div");
+    dong.className = "dongTin " + (t.cuaToi ? "cuaToi" : "cuaHo");
+    if (!t.cuaToi) {
+      var ten = document.createElement("div");
+      ten.className = "tenNguoiGuiTrongNhom";
+      ten.textContent = (t.emoji || "😀") + " " + (t.nick || "");
+      dong.appendChild(ten);
+    }
+    var bong = document.createElement("div");
+    bong.className = "bongBong";
+    bong.textContent = t.noiDung;
+    dong.appendChild(bong);
+    var gio = document.createElement("span");
+    gio.className = "gioNho";
+    gio.textContent = dinhDangGio(t.tg);
+    dong.appendChild(gio);
+    hop.appendChild(dong);
+    hop.scrollTop = hop.scrollHeight;
+  }
+
+  function taiTinNhomMoi() {
+    if (!nhomDangChat || !tokenMayChu) return;
+    var id = nhomDangChat.id;
+    goiAPI("/api/nhom/tin-nhan?nhom=" + encodeURIComponent(id) + "&since=" + nhomChatSince, "GET", null, true)
+      .then(function (kq) {
+        if (!kq.ok || !nhomDangChat || nhomDangChat.id !== id) return;
+        (kq.tinNhan || []).forEach(function (t) {
+          themBongBongNhom(t);
+          if (t.tg > nhomChatSince) nhomChatSince = t.tg;
+        });
+      });
+  }
+
+  function guiTinNhomSuKien() {
+    if (!nhomDangChat) return;
+    var inp = $("inpTinNhanNhom");
+    var noiDung = inp.value.trim();
+    var loiEl = $("loiChatNhom");
+    loiEl.textContent = "";
+    if (!noiDung) return;
+    var id = nhomDangChat.id;
+    goiAPI("/api/nhom/tin-nhan", "POST", { nhom: id, noiDung: noiDung }, true).then(function (kq) {
+      if (!kq.ok) { loiEl.textContent = kq.loi || "Không gửi được tin."; return; }
+      inp.value = "";
+      if (nhomDangChat && nhomDangChat.id === id) {
+        themBongBongNhom(kq.tin);
+        if (kq.tin.tg > nhomChatSince) nhomChatSince = kq.tin.tg;
+      }
+    });
+  }
+
+  // --- Tạo nhóm: vẽ danh sách bạn bè kèm ô chọn (dùng chung cho Thêm thành viên) ---
+  function veDsChonBanBe(idHop, cacSdtLoaiTru, idTrong) {
+    var hop = $(idHop);
+    hop.innerHTML = "";
+    return goiAPI("/api/ban-be", "GET", null, true).then(function (kq) {
+      var ds = (kq && kq.ok && kq.banBe) ? kq.banBe : [];
+      ds = ds.filter(function (b) { return cacSdtLoaiTru.indexOf(b.sdt) === -1; });
+      if (idTrong) {
+        $(idTrong).textContent = ds.length ? "" : "Bạn chưa có người bạn nào để mời vào nhóm.";
+        $(idTrong).classList.toggle("an", ds.length > 0);
+      }
+      if (!ds.length && !idTrong) {
+        var p = document.createElement("p");
+        p.className = "goiY";
+        p.textContent = "Không còn người bạn nào ở ngoài nhóm.";
+        hop.appendChild(p);
+      }
+      ds.forEach(function (b) {
+        var lb = document.createElement("label");
+        lb.className = "dongChonBanBe";
+        var cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.value = b.sdt;
+        cb.className = "oChonBanBe";
+        var av = document.createElement("span");
+        av.className = "avatarLon";
+        av.textContent = b.emoji || "😀";
+        var ten = document.createElement("span");
+        ten.textContent = b.nick || b.sdt;
+        lb.appendChild(cb);
+        lb.appendChild(av);
+        lb.appendChild(ten);
+        hop.appendChild(lb);
+      });
+      return ds.length;
+    });
+  }
+
+  function layDsDaChon(idHop) {
+    var ra = [];
+    $(idHop).querySelectorAll("input.oChonBanBe:checked").forEach(function (cb) { ra.push(cb.value); });
+    return ra;
+  }
+
+  function moManTaoNhom() {
+    $("menuCong").classList.add("an");
+    hienManTinNhan("manTaoNhom");
+    $("loiTaoNhom").textContent = "";
+    $("trongBanBeTaoNhom").textContent = "Đang tải danh sách bạn bè…";
+    $("trongBanBeTaoNhom").classList.remove("an");
+    veDsChonBanBe("dsBanBeTaoNhom", [], "trongBanBeTaoNhom");
+    window.scrollTo(0, 0);
+  }
+
+  function taoNhomSuKien() {
+    var ten = $("inpTenNhom").value.trim();
+    var emoji = $("inpEmojiNhom").value.trim() || "👥";
+    var ds = layDsDaChon("dsBanBeTaoNhom");
+    var loiEl = $("loiTaoNhom");
+    loiEl.textContent = "";
+    if (!ten) { loiEl.textContent = "Bạn chưa đặt tên cho nhóm."; return; }
+    if (ds.length < 2) { loiEl.textContent = "Nhóm cần ít nhất 2 người bạn được mời."; return; }
+    goiAPI("/api/nhom/tao", "POST", { ten: ten, emoji: emoji, dsSDT: ds }, true).then(function (kq) {
+      if (!kq.ok) { loiEl.textContent = kq.loi || "Không tạo được nhóm."; return; }
+      hienToast("Đã tạo nhóm “" + kq.nhom.ten + "” 🎉");
+      taiDsTroChuyen();
+      moChatNhom(kq.nhom);
+    });
+  }
+
+  // --- Thông tin nhóm ---
+  function taiChiTietNhom(id, coMoMan) {
+    return goiAPI("/api/nhom/chi-tiet?nhom=" + encodeURIComponent(id), "GET", null, true).then(function (kq) {
+      if (!kq.ok) {
+        hienToast(kq.loi || "Không tải được thông tin nhóm.");
+        if (!nhomDangChat) dongManChatNhom(true);
+        return null;
+      }
+      nhomThongTin = kq.nhom;
+      if (nhomDangChat && nhomDangChat.id === id) {
+        nhomDangChat.ten = kq.nhom.ten;
+        nhomDangChat.emoji = kq.nhom.emoji;
+        nhomDangChat.loai = kq.nhom.loai;
+        nhomDangChat.soThanhVien = kq.nhom.soThanhVien;
+        capNhatDauChatNhom();
+      }
+      if (coMoMan) { hienManTinNhan("manThongTinNhom"); window.scrollTo(0, 0); }
+      veThongTinNhom();
+      return kq.nhom;
+    });
+  }
+
+  function veThongTinNhom() {
+    var g = nhomThongTin;
+    if (!g) return;
+    var loiEl = $("loiThongTinNhom");
+    loiEl.textContent = "";
+    $("avatarThongTinNhom").textContent = g.emoji || "👥";
+    $("tenThongTinNhom").textContent = g.ten;
+    $("chiTietThongTinNhom").textContent = (g.loai === "cong-dong" ? "🌐 Cộng đồng" : "👥 Nhóm thường") +
+      " · " + g.soThanhVien + "/" + g.tran + " thành viên";
+    var vaiCuaToi = g.vai;
+    var toiQuanTri = (vaiCuaToi === "truong" || vaiCuaToi === "pho");
+
+    // Khối nâng cấp cộng đồng — 4 trạng thái rõ ràng
+    var khoi = $("khoiNangCapNhom");
+    khoi.innerHTML = "";
+    if (g.loai === "cong-dong") {
+      var pCd = document.createElement("p");
+      pCd.className = "goiY";
+      pCd.textContent = "🌐 Đây là Cộng đồng — tối đa 1000 thành viên.";
+      khoi.appendChild(pCd);
+    } else if (vaiCuaToi !== "truong") {
+      var pTv = document.createElement("p");
+      pTv.className = "goiY";
+      pTv.textContent = "Khi nhóm đủ 100 thành viên, trưởng nhóm có thể nâng cấp lên Cộng đồng (tối đa 1000 thành viên).";
+      khoi.appendChild(pTv);
+    } else if (g.soThanhVien < 100) {
+      var pThieu = document.createElement("p");
+      pThieu.className = "goiY";
+      pThieu.textContent = "⬆️ Nâng cấp lên Cộng đồng khi nhóm đủ 100 thành viên (hiện " + g.soThanhVien + "/100).";
+      khoi.appendChild(pThieu);
+    } else if (g.soCongDongCuaToi < g.hanMucCongDongCuaToi) {
+      var btnNc = document.createElement("button");
+      btnNc.type = "button";
+      btnNc.className = "nutChinh";
+      btnNc.textContent = "⬆️ Nâng cấp lên Cộng đồng (tối đa 1000 thành viên)";
+      btnNc.addEventListener("click", function () {
+        if (!confirm("Nâng cấp nhóm này lên Cộng đồng? Việc nâng cấp là một chiều — không hạ xuống nhóm thường được nữa.")) return;
+        goiAPI("/api/nhom/nang-cap", "POST", { nhom: g.id }, true).then(function (kq) {
+          if (!kq.ok) { loiEl.textContent = kq.loi || "Không nâng cấp được."; return; }
+          hienToast("Đã nâng cấp lên Cộng đồng 🌐");
+          taiChiTietNhom(g.id, false);
+          taiDsTroChuyen();
+        });
+      });
+      khoi.appendChild(btnNc);
+    } else {
+      var pHet = document.createElement("p");
+      pHet.className = "goiY";
+      pHet.textContent = g.toiLaVIP
+        ? "Bạn đang sở hữu tối đa " + g.hanMucCongDongCuaToi + " cộng đồng theo cấp tài khoản VIP nên chưa nâng cấp thêm được."
+        : "Tài khoản thường không sở hữu được cộng đồng. Nâng cấp VIP để nâng nhóm này lên Cộng đồng (tối đa 1000 thành viên).";
+      khoi.appendChild(pHet);
+      if (!g.toiLaVIP) {
+        var btnVip = document.createElement("button");
+        btnVip.type = "button";
+        btnVip.className = "nutChinh nho";
+        btnVip.textContent = "⭐ Xem các gói VIP";
+        btnVip.addEventListener("click", function () { dongManChatNhom(false); chonTab("canhan"); });
+        khoi.appendChild(btnVip);
+      }
+    }
+
+    // Đổi tên + thêm thành viên: chỉ trưởng/phó
+    $("khoiDoiTenNhom").classList.toggle("an", !toiQuanTri);
+    if (toiQuanTri) $("inpDoiTenNhom").value = g.ten;
+    $("khoiThemThanhVien").classList.toggle("an", !toiQuanTri);
+    if (toiQuanTri) {
+      var daCo = (g.thanhVien || []).map(function (tv) { return tv.sdt; });
+      veDsChonBanBe("dsBanBeThemNhom", daCo, null);
+    }
+
+    // Danh sách thành viên + nút quản trị theo vai trò
+    var hop = $("dsThanhVienNhom");
+    hop.innerHTML = "";
+    (g.thanhVien || []).forEach(function (tv) {
+      var nhanVai = tv.vai === "truong" ? " · Trưởng nhóm" : (tv.vai === "pho" ? " · Phó nhóm" : "");
+      var cot = document.createElement("div");
+      cot.className = "cotNutThanhVien";
+      if (tv.sdt !== sdtCuaToi) {
+        if (vaiCuaToi === "truong") {
+          var bTruong = document.createElement("button");
+          bTruong.type = "button";
+          bTruong.className = "nutPhu nho";
+          bTruong.textContent = "👑 Nhường trưởng";
+          bTruong.addEventListener("click", function () { chuyenTruongSuKien(tv); });
+          cot.appendChild(bTruong);
+          var bPho = document.createElement("button");
+          bPho.type = "button";
+          bPho.className = "nutPhu nho";
+          bPho.textContent = tv.vai === "pho" ? "⬇️ Hạ phó" : "⭐ Phong phó";
+          bPho.addEventListener("click", function () {
+            goiAPI("/api/nhom/pho", "POST", { nhom: g.id, sdt: tv.sdt, bat: tv.vai !== "pho" }, true).then(function (kq) {
+              if (!kq.ok) { loiEl.textContent = kq.loi || "Không thực hiện được."; return; }
+              taiChiTietNhom(g.id, false);
+            });
+          });
+          cot.appendChild(bPho);
+          var bXoaT = document.createElement("button");
+          bXoaT.type = "button";
+          bXoaT.className = "nutPhu nho nutDangXuat";
+          bXoaT.textContent = "❌ Xóa";
+          bXoaT.addEventListener("click", function () { xoaThanhVienSuKien(tv); });
+          cot.appendChild(bXoaT);
+        } else if (vaiCuaToi === "pho" && tv.vai === "thanh-vien") {
+          var bXoaP = document.createElement("button");
+          bXoaP.type = "button";
+          bXoaP.className = "nutPhu nho nutDangXuat";
+          bXoaP.textContent = "❌ Xóa";
+          bXoaP.addEventListener("click", function () { xoaThanhVienSuKien(tv); });
+          cot.appendChild(bXoaP);
+        }
+      }
+      var the = taoTheNguoi(tv.emoji, tv.nick || tv.sdt, (tv.sdt === sdtCuaToi ? "Bạn" : "Thành viên") + nhanVai, cot.childNodes.length ? cot : null);
+      hop.appendChild(the);
+    });
+
+    $("btnGiaiTanNhom").classList.toggle("an", vaiCuaToi !== "truong");
+  }
+
+  function xoaThanhVienSuKien(tv) {
+    var g = nhomThongTin;
+    if (!g) return;
+    if (!confirm("Xóa " + (tv.nick || tv.sdt) + " khỏi nhóm?")) return;
+    goiAPI("/api/nhom/xoa-thanh-vien", "POST", { nhom: g.id, sdt: tv.sdt }, true).then(function (kq) {
+      if (!kq.ok) { $("loiThongTinNhom").textContent = kq.loi || "Không xóa được."; return; }
+      hienToast("Đã xóa thành viên khỏi nhóm.");
+      taiChiTietNhom(g.id, false);
+      taiDsTroChuyen();
+    });
+  }
+
+  function chuyenTruongSuKien(tv) {
+    var g = nhomThongTin;
+    if (!g) return;
+    if (!confirm("Chuyển quyền trưởng nhóm cho " + (tv.nick || tv.sdt) + "? Bạn sẽ trở thành thành viên thường.")) return;
+    goiAPI("/api/nhom/chuyen-truong", "POST", { nhom: g.id, sdtNhan: tv.sdt }, true).then(function (kq) {
+      if (!kq.ok) { $("loiThongTinNhom").textContent = kq.loi || "Không chuyển quyền được."; return; }
+      hienToast("Đã chuyển quyền trưởng nhóm 👑");
+      taiChiTietNhom(g.id, false);
+      taiDsTroChuyen();
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var btnMenu = $("btnMenuCong");
+    if (btnMenu) btnMenu.addEventListener("click", function (e) {
+      e.stopPropagation();
+      $("menuCong").classList.toggle("an");
+    });
+    document.addEventListener("click", function (e) {
+      var m = $("menuCong");
+      if (m && !m.classList.contains("an") && !e.target.closest(".oMenuCong")) m.classList.add("an");
+    });
+    var mucTao = $("mucTaoNhom");
+    if (mucTao) mucTao.addEventListener("click", moManTaoNhom);
+    var btnQlN = $("btnQuayLaiNhom");
+    if (btnQlN) btnQlN.addEventListener("click", function () { dongManChatNhom(true); });
+    var btnTt = $("btnThongTinNhom");
+    if (btnTt) btnTt.addEventListener("click", function () {
+      if (nhomDangChat) taiChiTietNhom(nhomDangChat.id, true);
+    });
+    var btnGuiN = $("btnGuiTinNhom");
+    if (btnGuiN) btnGuiN.addEventListener("click", guiTinNhomSuKien);
+    var inpN = $("inpTinNhanNhom");
+    if (inpN) inpN.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); guiTinNhomSuKien(); }
+    });
+    var btnQlTao = $("btnQuayLaiTaoNhom");
+    if (btnQlTao) btnQlTao.addEventListener("click", function () { dongManChatNhom(true); });
+    var btnTaoXn = $("btnTaoNhomXacNhan");
+    if (btnTaoXn) btnTaoXn.addEventListener("click", taoNhomSuKien);
+    var btnQlTt = $("btnQuayLaiThongTinNhom");
+    if (btnQlTt) btnQlTt.addEventListener("click", function () { hienManTinNhan("manChatNhom"); });
+    var btnDoiTen = $("btnDoiTenNhom");
+    if (btnDoiTen) btnDoiTen.addEventListener("click", function () {
+      var g = nhomThongTin;
+      if (!g) return;
+      var ten = $("inpDoiTenNhom").value.trim();
+      if (!ten) { $("loiThongTinNhom").textContent = "Tên nhóm không được để trống."; return; }
+      goiAPI("/api/nhom/doi-ten", "POST", { nhom: g.id, ten: ten }, true).then(function (kq) {
+        if (!kq.ok) { $("loiThongTinNhom").textContent = kq.loi || "Không đổi tên được."; return; }
+        hienToast("Đã đổi tên nhóm.");
+        taiChiTietNhom(g.id, false);
+        taiDsTroChuyen();
+      });
+    });
+    var btnThemXn = $("btnThemThanhVienXacNhan");
+    if (btnThemXn) btnThemXn.addEventListener("click", function () {
+      var g = nhomThongTin;
+      if (!g) return;
+      var ds = layDsDaChon("dsBanBeThemNhom");
+      if (!ds.length) { $("loiThongTinNhom").textContent = "Bạn chưa chọn người bạn nào để thêm."; return; }
+      goiAPI("/api/nhom/them-thanh-vien", "POST", { nhom: g.id, dsSDT: ds }, true).then(function (kq) {
+        if (!kq.ok) { $("loiThongTinNhom").textContent = kq.loi || "Không thêm được thành viên."; return; }
+        hienToast("Đã thêm thành viên vào nhóm 👥");
+        taiChiTietNhom(g.id, false);
+        taiDsTroChuyen();
+      });
+    });
+    var btnRoi = $("btnRoiNhom");
+    if (btnRoi) btnRoi.addEventListener("click", function () {
+      var g = nhomThongTin;
+      if (!g) return;
+      if (!confirm("Bạn rời nhóm “" + g.ten + "”?")) return;
+      goiAPI("/api/nhom/roi", "POST", { nhom: g.id }, true).then(function (kq) {
+        if (!kq.ok) { $("loiThongTinNhom").textContent = kq.loi || "Không rời nhóm được."; return; }
+        hienToast("Bạn đã rời nhóm.");
+        dongManChatNhom(true);
+      });
+    });
+    var btnGt = $("btnGiaiTanNhom");
+    if (btnGt) btnGt.addEventListener("click", function () {
+      var g = nhomThongTin;
+      if (!g) return;
+      if (!confirm("Giải tán nhóm “" + g.ten + "”? Toàn bộ tin nhắn của nhóm sẽ bị xóa, không khôi phục được.")) return;
+      goiAPI("/api/nhom/giai-tan", "POST", { nhom: g.id }, true).then(function (kq) {
+        if (!kq.ok) { $("loiThongTinNhom").textContent = kq.loi || "Không giải tán được."; return; }
+        hienToast("Đã giải tán nhóm.");
+        dongManChatNhom(true);
+      });
+    });
+  });
 
   // ================= V5: MEDIA TRONG CHAT (ảnh / tệp / ghi âm) =================
   // Tệp tải qua POST /api/tin-nhan/upload (body thô); tải xuống qua

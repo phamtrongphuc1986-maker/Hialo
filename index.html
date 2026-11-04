@@ -627,7 +627,15 @@
   <!-- ===== TAB TIN NHẮN (v4) ===== -->
   <div id="tabTinNhan" class="tabNoiDung an">
     <section class="the" id="khuDsTroChuyen">
-      <h2>💬 Tin nhắn</h2>
+      <div class="hangDauTinNhan">
+        <h2>💬 Tin nhắn</h2>
+        <div class="oMenuCong">
+          <button type="button" id="btnMenuCong" class="nutPhu nho" title="Thêm mới">＋</button>
+          <div id="menuCong" class="menuCong an">
+            <button type="button" id="mucTaoNhom" class="mucMenuCong">👥 Tạo nhóm</button>
+          </div>
+        </div>
+      </div>
       <div id="dsTroChuyen" class="danhSach"></div>
       <p class="goiY" id="trongTroChuyen">Chưa có cuộc trò chuyện nào. Vào Danh bạ, chọn một người bạn để nhắn tin nhé.</p>
     </section>
@@ -666,6 +674,73 @@
       <input type="file" id="inpChonAnh" accept="image/*" class="an">
       <input type="file" id="inpChonTep" class="an">
       <p class="loi" id="loiChat"></p>
+    </section>
+
+    <!-- ===== V6: CHAT NHÓM ===== -->
+    <section class="the an" id="manChatNhom">
+      <div class="dauChat">
+        <button type="button" id="btnQuayLaiNhom" class="nutPhu nho">←</button>
+        <span id="avatarChatNhom" class="avatarChat">👥</span>
+        <div class="thongTinNguoi">
+          <p class="tenNguoi" id="tenChatNhom"></p>
+          <p class="chiTietNguoi" id="chiTietChatNhom"></p>
+        </div>
+        <button type="button" id="btnThongTinNhom" class="nutPhu nho" title="Thông tin nhóm">ℹ️</button>
+      </div>
+      <div id="hopTinNhanNhom" class="hopTinNhan"></div>
+      <div class="hangNhapChat">
+        <input id="inpTinNhanNhom" type="text" maxlength="1000" placeholder="Nhắn tin tới nhóm…" autocomplete="off">
+        <button type="button" id="btnGuiTinNhom" class="nutChinh nutGuiTin">Gửi ➤</button>
+      </div>
+      <p class="loi" id="loiChatNhom"></p>
+    </section>
+
+    <!-- ===== V6: TẠO NHÓM ===== -->
+    <section class="the an" id="manTaoNhom">
+      <div class="dauChat">
+        <button type="button" id="btnQuayLaiTaoNhom" class="nutPhu nho">←</button>
+        <div class="thongTinNguoi">
+          <p class="tenNguoi">👥 Tạo nhóm mới</p>
+          <p class="chiTietNguoi">Chọn ít nhất 2 người bạn để lập nhóm</p>
+        </div>
+      </div>
+      <label class="nhan" for="inpTenNhom">Tên nhóm</label>
+      <input id="inpTenNhom" type="text" maxlength="60" placeholder="Ví dụ: Nhóm phà Đồng Bài">
+      <label class="nhan" for="inpEmojiNhom">Biểu tượng nhóm (emoji)</label>
+      <input id="inpEmojiNhom" type="text" maxlength="8" value="👥">
+      <p class="nhan">Chọn bạn bè vào nhóm</p>
+      <div id="dsBanBeTaoNhom" class="danhSach"></div>
+      <p class="goiY" id="trongBanBeTaoNhom">Đang tải danh sách bạn bè…</p>
+      <button type="button" id="btnTaoNhomXacNhan" class="nutChinh">👥 Tạo nhóm</button>
+      <p class="loi" id="loiTaoNhom"></p>
+    </section>
+
+    <!-- ===== V6: THÔNG TIN NHÓM ===== -->
+    <section class="the an" id="manThongTinNhom">
+      <div class="dauChat">
+        <button type="button" id="btnQuayLaiThongTinNhom" class="nutPhu nho">←</button>
+        <span id="avatarThongTinNhom" class="avatarChat">👥</span>
+        <div class="thongTinNguoi">
+          <p class="tenNguoi" id="tenThongTinNhom"></p>
+          <p class="chiTietNguoi" id="chiTietThongTinNhom"></p>
+        </div>
+      </div>
+      <div id="khoiNangCapNhom"></div>
+      <div id="khoiDoiTenNhom" class="an">
+        <label class="nhan" for="inpDoiTenNhom">Đổi tên nhóm</label>
+        <input id="inpDoiTenNhom" type="text" maxlength="60">
+        <button type="button" id="btnDoiTenNhom" class="nutPhu nho">💾 Lưu tên mới</button>
+      </div>
+      <div id="khoiThemThanhVien" class="an">
+        <p class="nhan">Thêm thành viên (chọn bạn bè của bạn)</p>
+        <div id="dsBanBeThemNhom" class="danhSach"></div>
+        <button type="button" id="btnThemThanhVienXacNhan" class="nutChinh nho">➕ Thêm vào nhóm</button>
+      </div>
+      <p class="nhan">Thành viên</p>
+      <div id="dsThanhVienNhom" class="danhSach"></div>
+      <p class="loi" id="loiThongTinNhom"></p>
+      <button type="button" id="btnRoiNhom" class="nutPhu">🚪 Rời nhóm</button>
+      <button type="button" id="btnGiaiTanNhom" class="nutPhu nutDangXuat an">🗑️ Giải tán nhóm</button>
     </section>
   </div>
 
