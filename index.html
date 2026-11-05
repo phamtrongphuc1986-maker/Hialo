@@ -11,6 +11,24 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Hialo">
+<script>
+/* Che do app CH Play: app mo web qua dia chi co ?play=1 (hoac referrer android-app://).
+   Khi do an toan bo phan MUA VIP — Google bat hang so phai qua Play Billing.
+   VIP da mua tren web van giu nguyen vi quyen loi gan theo tai khoan, chi la khong ban trong app.
+   Dung sessionStorage (khong phai localStorage) de lan mo web bang trinh duyet thuong khong bi an theo. */
+try {
+  if (new URLSearchParams(location.search).get('play') === '1' || document.referrer.indexOf('android-app://') === 0) {
+    sessionStorage.setItem('hialoPlayApp', '1');
+  }
+  if (sessionStorage.getItem('hialoPlayApp') === '1') document.documentElement.classList.add('playapp');
+} catch (e) {}
+</script>
+<style>
+.chiPlay { display: none; }
+.playapp .chiWeb { display: none !important; }
+.playapp .chiPlay { display: block !important; }
+.playapp #dsGoiVip, .playapp #panelChoThanhToan, .playapp #panelThanhToanVip, .playapp #btnLenVip { display: none !important; }
+</style>
 </head>
 <body>
 <div class="khung" id="khungChinh">
@@ -556,7 +574,8 @@
   <section class="the" id="mucVip">
     <h2>⭐ Gói VIP</h2>
     <p class="trangThai" id="trangThaiVip">Đang dùng bản miễn phí.</p>
-    <p class="moTa">VIP giúp bạn tìm quanh đây <strong>không giới hạn số hồ sơ</strong>, bán kính tới <strong>20 km</strong>, nhắn tin được cho người lạ và được <strong>ưu tiên hiển thị</strong> trong kết quả tìm của người khác. Đăng ký miễn phí 100% — chỉ trả tiền khi nâng VIP. Thanh toán <strong>tự động qua MoMo, ZaloPay hoặc chuyển khoản VietQR</strong>: trả xong là VIP tự bật sau vài giây khi hệ thống xác nhận — không cần gửi ảnh biên lai cho ai cả.</p>
+    <p class="moTa chiWeb">VIP giúp bạn tìm quanh đây <strong>không giới hạn số hồ sơ</strong>, bán kính tới <strong>20 km</strong>, nhắn tin được cho người lạ và được <strong>ưu tiên hiển thị</strong> trong kết quả tìm của người khác. Đăng ký miễn phí 100% — chỉ trả tiền khi nâng VIP. Thanh toán <strong>tự động qua MoMo, ZaloPay hoặc chuyển khoản VietQR</strong>: trả xong là VIP tự bật sau vài giây khi hệ thống xác nhận — không cần gửi ảnh biên lai cho ai cả.</p>
+    <p class="moTa chiPlay">VIP giúp bạn tìm quanh đây <strong>không giới hạn số hồ sơ</strong>, bán kính tới <strong>20 km</strong>, nhắn tin được cho người lạ và được <strong>ưu tiên hiển thị</strong> trong kết quả tìm của người khác. Trạng thái VIP gắn theo tài khoản của bạn và hiển thị ở dòng phía trên — quyền lợi đã có vẫn giữ nguyên khi bạn dùng bản app này.</p>
     <div id="dsGoiVip" class="dsGoiVip"></div>
 
     <div id="panelChoThanhToan" class="panelThanhToan an">

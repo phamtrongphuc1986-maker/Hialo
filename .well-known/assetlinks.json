@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "vn.hialo.app",
+      "sha256_cert_fingerprints": [
+        "BD:6C:47:92:EA:A6:FE:42:93:B3:D0:8C:54:51:84:45:A5:D3:EC:80:2C:71:D4:DC:BE:79:5A:18:EF:7A:96:E8"
+      ]
+    }
+  }
+]
