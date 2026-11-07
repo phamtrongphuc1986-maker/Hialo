@@ -387,6 +387,7 @@ if (typeof document !== "undefined") {
     else if (ten === "trangDuLieu") taiLuuTru();
     else if (ten === "trangHCloud") taiDamMay();
     else if (ten === "trangTaiKhoan") taiThongTinTaiKhoan();
+    else if (ten === "trangXoaTaiKhoan") chuanBiTrangXoaTaiKhoan();
     else if (ten === "trangRiengTu") { taiCaiDat(); taiDsChanCaNhan(); taiQuyenTienIch(); }
     else if (ten === "trangMaQRCuaToi") veMaQRCuaToi();
     else if (ten === "trangCaiDat" || ten.indexOf("trangCd") === 0 || ten === "trangGiaoDien" || ten === "trangHStyle") taiCaiDat();
@@ -3212,6 +3213,60 @@ if (typeof document !== "undefined") {
     });
   }
 
+  // ===== TỰ XÓA TÀI KHOẢN TRONG APP =====
+  function chuanBiTrangXoaTaiKhoan() {
+    $("sdtXoaTaiKhoan").textContent = sdtHienTai || "";
+    $("chkHieuXoaTaiKhoan").checked = false;
+    $("inpBonSoCuoiXoa").value = "";
+    $("loiXoaTaiKhoan").textContent = "";
+    capNhatNutXoaTaiKhoan();
+  }
+
+  function capNhatNutXoaTaiKhoan() {
+    var nut = $("btnXoaTaiKhoanVinhVien");
+    if (!nut) return;
+    var bonSo = $("inpBonSoCuoiXoa").value.replace(/\D/g, "");
+    nut.disabled = !($("chkHieuXoaTaiKhoan").checked && sdtHienTai && bonSo === sdtHienTai.slice(-4));
+    nut.textContent = "🗑 Xóa tài khoản vĩnh viễn";
+  }
+
+  function xoaTaiKhoanSuKien() {
+    var loi = $("loiXoaTaiKhoan");
+    if (!TQD_SERVER || !tokenMayChu) {
+      loi.textContent = "Chức năng này chỉ hoạt động khi ứng dụng đã nối máy chủ.";
+      return;
+    }
+    var bonSo = $("inpBonSoCuoiXoa").value.replace(/\D/g, "");
+    if (!$("chkHieuXoaTaiKhoan").checked || !sdtHienTai || bonSo !== sdtHienTai.slice(-4)) {
+      loi.textContent = "Hãy tích xác nhận và nhập đúng 4 số cuối của số điện thoại.";
+      capNhatNutXoaTaiKhoan();
+      return;
+    }
+    var sdtBiXoa = sdtHienTai;
+    var nut = $("btnXoaTaiKhoanVinhVien");
+    nut.disabled = true;
+    nut.textContent = "Đang xóa tài khoản…";
+    loi.textContent = "";
+    goiAPI("/api/tai-khoan/xoa", "POST", { xacNhan: true, bonSoCuoi: bonSo }, true).then(function (kq) {
+      if (!kq.ok) {
+        loi.textContent = kq.loi || "Chưa xóa được tài khoản. Thử lại sau nhé.";
+        capNhatNutXoaTaiKhoan();
+        return;
+      }
+      // Xóa bản sao hồ sơ của chính tài khoản này trên thiết bị, rồi dùng luồng đăng xuất
+      // sẵn có để dừng chat/gọi, hủy trạng thái phiên phía client và quay về màn đăng nhập.
+      try {
+        var users = taiUsers();
+        if (users && users[sdtBiXoa]) { delete users[sdtBiXoa]; luuUsers(users); }
+        localStorage.removeItem("hialo_phien_sms_den");
+        sessionStorage.removeItem("tqd_da_mo_khoa");
+      } catch (e) {}
+      trangCaNhanDangMo = "hub";
+      dangXuat();
+      setTimeout(function () { hienToast("Đã xóa tài khoản và dữ liệu của bạn."); }, 80);
+    });
+  }
+
   function batPinSuKien() {
     var p1 = $("inpPinMoi").value.replace(/\s/g, "");
     var p2 = $("inpPinMoi2").value.replace(/\s/g, "");
@@ -4168,6 +4223,13 @@ if (typeof document !== "undefined") {
     $("btnMoKhoa").addEventListener("click", moKhoaSuKien);
     $("inpKhoaPin").addEventListener("keydown", function (ev) { if (ev.key === "Enter") moKhoaSuKien(); });
     $("btnKhoaDangXuat").addEventListener("click", dangXuat);
+    // Tự xóa tài khoản: nút chỉ bật khi đã tích hiểu + nhập đúng 4 số cuối SĐT của mình
+    $("chkHieuXoaTaiKhoan").addEventListener("change", capNhatNutXoaTaiKhoan);
+    $("inpBonSoCuoiXoa").addEventListener("input", function () {
+      this.value = this.value.replace(/\D/g, "").slice(0, 4);
+      capNhatNutXoaTaiKhoan();
+    });
+    $("btnXoaTaiKhoanVinhVien").addEventListener("click", xoaTaiKhoanSuKien);
     // Ví QR
     var rdLoaiQR = document.querySelectorAll('input[name="loaiViQR"]');
     for (var lq = 0; lq < rdLoaiQR.length; lq++) {

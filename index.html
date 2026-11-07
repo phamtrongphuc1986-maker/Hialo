@@ -164,6 +164,7 @@ try {
           <button type="button" class="mucMenu" data-mo-trang="trangThongTin"><span class="iconMenu">ℹ️</span><span class="chuMenu"><strong>Thông tin về Hialo</strong><small>Phiên bản và giới thiệu ứng dụng</small></span><span class="chevronMenu">›</span></button>
           <button type="button" class="mucMenu" data-mo-trang="trangHoTro"><span class="iconMenu">🆘</span><span class="chuMenu"><strong>Liên hệ hỗ trợ</strong><small>Email hỗ trợ và câu hỏi thường gặp</small></span><span class="chevronMenu">›</span></button>
           <button type="button" class="mucMenu" id="btnChuyenTaiKhoan"><span class="iconMenu">🔄</span><span class="chuMenu"><strong>Chuyển tài khoản</strong><small>Đăng nhập bằng số điện thoại khác</small></span><span class="chevronMenu">›</span></button>
+          <button type="button" class="mucMenu mucMenuNguyHiem" data-mo-trang="trangXoaTaiKhoan"><span class="iconMenu">🗑</span><span class="chuMenu"><strong>Xóa tài khoản</strong><small>Xóa vĩnh viễn tài khoản và dữ liệu của bạn</small></span><span class="chevronMenu">›</span></button>
         </nav>
         <button type="button" id="btnDangXuat" class="nutDangXuatLon">Đăng xuất</button>
       </div>
@@ -448,6 +449,40 @@ try {
 
         <h3 class="tieuDeCon">🖥️ Phiên đăng nhập</h3>
         <p class="moTa" id="thongTinPhien">Đang tải thông tin phiên…</p>
+
+        <h3 class="tieuDeCon">🗑 Xóa tài khoản</h3>
+        <p class="moTa">Bạn có thể tự xóa tài khoản ngay trong ứng dụng. Thao tác này xóa dữ liệu theo Chính sách bảo mật và <strong>không khôi phục được</strong>.</p>
+        <button type="button" class="nutPhu nutDangXuat" data-mo-trang="trangXoaTaiKhoan">🗑 Xóa tài khoản</button>
+      </div>
+
+      <!-- ===== TỰ XÓA TÀI KHOẢN (Google Play) ===== -->
+      <div class="trangCon an" id="trangXoaTaiKhoan">
+        <div class="dauTrangCon">
+          <button type="button" class="nutPhu nho" data-quay-lai="trangTaiKhoan">←</button>
+          <h3>Xóa tài khoản</h3>
+        </div>
+        <div class="hopCanhBaoXoa">
+          <p><strong>Thao tác này xóa ngay và không thể khôi phục.</strong></p>
+          <ul>
+            <li>Hồ sơ, vị trí, trạng thái và quyền lợi VIP gắn với tài khoản.</li>
+            <li>Toàn bộ tin nhắn trò chuyện của bạn, tệp bạn đã gửi, bài đăng và quan hệ bạn bè.</li>
+            <li>Tư cách thành viên nhóm/cộng đồng. Nếu bạn là trưởng nhóm, quyền trưởng nhóm sẽ được chuyển cho thành viên còn lại; nhóm chỉ còn mình bạn sẽ bị giải tán.</li>
+            <li>Mọi phiên đăng nhập của tài khoản trên mọi thiết bị.</li>
+          </ul>
+          <p>Bản ghi thanh toán được giữ ở mức tối thiểu dưới dạng ẩn danh theo quy định. Bản sao lưu (nếu có) sẽ bị xóa trong tối đa 30 ngày; nội dung bị báo cáo vi phạm có thể được giữ lại theo chính sách của Hialo.</p>
+        </div>
+        <p class="moTa">Số điện thoại của bạn: <strong id="sdtXoaTaiKhoan"></strong></p>
+        <div class="congTac khongVienTren">
+          <label class="hangCongTac" for="chkHieuXoaTaiKhoan">
+            <input type="checkbox" id="chkHieuXoaTaiKhoan">
+            <span><strong>Tôi hiểu dữ liệu sẽ bị xóa và không khôi phục được</strong></span>
+          </label>
+        </div>
+        <label class="nhan" for="inpBonSoCuoiXoa">Nhập 4 số cuối của số điện thoại để xác nhận</label>
+        <input id="inpBonSoCuoiXoa" type="text" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="4 số cuối">
+        <p class="loi" id="loiXoaTaiKhoan"></p>
+        <button type="button" id="btnXoaTaiKhoanVinhVien" class="nutChinh nutXoaTaiKhoan" disabled>🗑 Xóa tài khoản vĩnh viễn</button>
+        <button type="button" class="nutPhu" data-quay-lai="trangTaiKhoan">Không xóa, quay lại</button>
       </div>
 
       <!-- ===== V5.1: TÀI LIỆU CỦA TÔI ===== -->
