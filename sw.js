@@ -1,5 +1,5 @@
 /* Hialo service worker: network-first cho file cùng nguồn (trang luôn mới khi có mạng). */
-var TEN_CACHE = 'hialo-v9';
+var TEN_CACHE = 'hialo-v10';
 self.addEventListener('install', function (e) { self.skipWaiting(); });
 self.addEventListener('activate', function (e) {
   e.waitUntil(
@@ -30,3 +30,5 @@ self.addEventListener('fetch', function (e) {
 /* hialo-v8 (10/11/2026): tu dang xuat khi phien het han o may chu (401) de nguoi dung dang nhap lai duoc */
 
 /* hialo-v9 (10/11/2026): muc Xo so tro sang trang KQXSMB cua chu app (kqxsmb.hialo.vn) */
+
+/* hialo-v10 (10/11/2026): khoi phuc index.html day du (ban 86KB bi ban cu 17KB ghi de), giu fx + Xo so->KQXSMB, chan dung khoi tao khi thieu phan tu tuy chon */

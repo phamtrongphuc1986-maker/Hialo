@@ -4079,10 +4079,13 @@ if (typeof document !== "undefined") {
     $("btnGuiLai").addEventListener("click", guiLaiMaSuKien);
     $("btnDoiSo").addEventListener("click", doiSoSuKien);
     // Luồng MO-SMS (V5.3): chỉ hiện khi máy chủ bật tính năng
-    $("btnLayMaSmsDen").addEventListener("click", layMaSmsDenSuKien);
-    $("btnHuySmsDen").addEventListener("click", function () {
+    var btnLayMaEl = $("btnLayMaSmsDen");
+    if (btnLayMaEl) btnLayMaEl.addEventListener("click", layMaSmsDenSuKien);
+    var btnHuySmsEl = $("btnHuySmsDen");
+    if (btnHuySmsEl) btnHuySmsEl.addEventListener("click", function () {
       dungChoSmsDen();
-      $("loiSmsDen").textContent = "";
+      var loiSmsEl = $("loiSmsDen");
+      if (loiSmsEl) loiSmsEl.textContent = "";
     });
     taiCauHinhXacThuc();
     $("btnDangXuat").addEventListener("click", dangXuat);
