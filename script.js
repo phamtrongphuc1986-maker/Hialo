@@ -4050,7 +4050,7 @@ if (typeof document !== "undefined") {
     kiemTraKhoaPin(); // V5.1: khóa PIN nếu tài khoản đã bật (phiên còn hiệu lực)
     datLocGioi(me ? gioiDoiDien(me.gioi) : "tatca");
     if (TQD_SERVER) {
-      $("nhanDemoKetQua").textContent = "🌐 Chế độ máy chủ: đăng nhập bằng OTP thật rồi bấm Tìm — kết quả là người dùng thật đã bật hiển thị quanh bạn.";
+      $("nhanDemoKetQua").textContent = "🌐 Đăng nhập bằng mã OTP để thấy người dùng thật quanh bạn.";
     }
 
     // Luồng tài khoản OTP

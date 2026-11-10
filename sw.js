@@ -1,5 +1,5 @@
 /* Hialo service worker: network-first cho file cùng nguồn (trang luôn mới khi có mạng). */
-var TEN_CACHE = 'hialo-v6';
+var TEN_CACHE = 'hialo-v7';
 self.addEventListener('install', function (e) { self.skipWaiting(); });
 self.addEventListener('activate', function (e) {
   e.waitUntil(
@@ -24,3 +24,5 @@ self.addEventListener('fetch', function (e) {
 /* V6.2: QR & Tien ich — quet QR, Ma QR cua toi, trang Tien ich, loi tat quet nhanh (05/11/2026) */
 /* kich hoat lai Pages build cho dot V6.2 */
 /* hialo-v6 (07/11/2026): tu xoa tai khoan trong app cho Google Play */
+
+/* hialo-v7 (10/11/2026): xoa doan chu 'ban mau xem thu' con sot + sua nhan huong dan dang nhap OTP */
