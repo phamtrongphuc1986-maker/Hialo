@@ -1,5 +1,5 @@
 /* Hialo service worker: network-first cho file cùng nguồn (trang luôn mới khi có mạng). */
-var TEN_CACHE = 'hialo-v7';
+var TEN_CACHE = 'hialo-v8';
 self.addEventListener('install', function (e) { self.skipWaiting(); });
 self.addEventListener('activate', function (e) {
   e.waitUntil(
@@ -26,3 +26,5 @@ self.addEventListener('fetch', function (e) {
 /* hialo-v6 (07/11/2026): tu xoa tai khoan trong app cho Google Play */
 
 /* hialo-v7 (10/11/2026): xoa doan chu 'ban mau xem thu' con sot + sua nhan huong dan dang nhap OTP */
+
+/* hialo-v8 (10/11/2026): tu dang xuat khi phien het han o may chu (401) de nguoi dung dang nhap lai duoc */

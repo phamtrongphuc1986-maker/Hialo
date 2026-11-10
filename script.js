@@ -247,7 +247,16 @@ if (typeof document !== "undefined") {
       headers: headers,
       body: than ? JSON.stringify(than) : undefined
     }).then(function (r) {
-      return r.json().catch(function () { return { ok: false, loi: "Máy chủ trả lời không hợp lệ." }; });
+      return r.json().catch(function () { return { ok: false, loi: "Máy chủ trả lời không hợp lệ." }; }).then(function (kq) {
+        // V7.1: phien het han o may chu (vd may chu khoi dong lai) -> tu dang xuat o may de hien man dang nhap
+        if (r.status === 401 && canToken && tokenMayChu && duongDan !== "/api/dang-xuat") {
+          hetPhienVuaXayRa = true;
+          tokenMayChu = null;
+          luuToken();
+          dangXuat();
+        }
+        return kq;
+      });
     }).catch(function () {
       return { ok: false, loi: "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại nhé." };
     });
@@ -505,7 +514,8 @@ if (typeof document !== "undefined") {
     $("inpSdt").value = "";
     $("loiSdt").textContent = "";
     capNhatManHinh();
-    hienToast("Đã đăng xuất. Hẹn gặp lại bạn! 👋");
+    hienToast(hetPhienVuaXayRa ? "Phiên đăng nhập đã hết hạn — đăng nhập lại nhé." : "Đã đăng xuất. Hẹn gặp lại bạn! 👋");
+    hetPhienVuaXayRa = false;
   }
 
   // --- Luồng OTP ---
@@ -922,6 +932,7 @@ if (typeof document !== "undefined") {
     tuongnha: "tabTuongNha", canhan: "tabCaNhan"
   };
   var tabDangChon = "khampha";       // tab mặc định: Khám phá
+  var hetPhienVuaXayRa = false;   // V7.1: co bao vua bi may chu cat phien (401)
   var chatVoi = null;                // { sdt, nick, emoji } đang trò chuyện
   var chatSince = 0;                 // mốc tg tin nhắn mới nhất đã hiện trong màn chat
   var idPollChat = null;             // interval tự làm mới chat mỗi 3 giây
@@ -3411,7 +3422,16 @@ if (typeof document !== "undefined") {
     return fetch(TQD_SERVER + "/api/tep-rieng/upload", {
       method: "POST", headers: headers, body: file
     }).then(function (r) {
-      return r.json().catch(function () { return { ok: false, loi: "Máy chủ trả lời không hợp lệ." }; });
+      return r.json().catch(function () { return { ok: false, loi: "Máy chủ trả lời không hợp lệ." }; }).then(function (kq) {
+        // V7.1: phien het han o may chu (vd may chu khoi dong lai) -> tu dang xuat o may de hien man dang nhap
+        if (r.status === 401 && canToken && tokenMayChu && duongDan !== "/api/dang-xuat") {
+          hetPhienVuaXayRa = true;
+          tokenMayChu = null;
+          luuToken();
+          dangXuat();
+        }
+        return kq;
+      });
     }).catch(function () {
       return { ok: false, loi: "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại nhé." };
     });
