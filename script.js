@@ -274,7 +274,9 @@ if (typeof document !== "undefined") {
     if (!TQD_SERVER || !tokenMayChu || !me) return;
     goiAPI("/api/profile", "POST", {
       nick: me.nick, gioiTinh: me.gioi, tuoi: me.tuoi, emoji: me.emoji,
-      hienThi: me.hienThi !== false
+      hienThi: me.hienThi !== false,
+      mucDich: me.mucDich || "", // Gói 2
+      soThich: Array.isArray(me.soThich) ? me.soThich : [] // Gói 2
     }, true).then(function (kq) {
       if (!kq.ok) hienToast("Chưa đồng bộ được hồ sơ lên máy chủ: " + (kq.loi || "lỗi không rõ"));
       else if (viTri && !viTri.macDinh) dongBoViTriLenMayChu();
@@ -431,6 +433,8 @@ if (typeof document !== "undefined") {
     if (!me) return;
     $("inpNick").value = me.nick || "";
     $("inpTuoi").value = me.tuoi || "";
+    if ($("selMucDichHoSo")) $("selMucDichHoSo").value = me.mucDich || ""; // Gói 2
+    if ($("inpSoThichHoSo")) $("inpSoThichHoSo").value = Array.isArray(me.soThich) ? me.soThich.join(", ") : ""; // Gói 2
     var radios = document.querySelectorAll('input[name="gioiMe"]');
     for (var i = 0; i < radios.length; i++) radios[i].checked = radios[i].value === me.gioi;
     chonEmoji(me.emoji || EMOJI_AVATAR[0]);
@@ -458,6 +462,17 @@ if (typeof document !== "undefined") {
     chonEmoji(emojiChon);
   }
 
+  // Gói 2: đọc sở thích từ ô nhập (phân tách bằng dấu phẩy, tối đa 10 mục)
+  function docSoThichTuForm() {
+    var v = $("inpSoThichHoSo") ? $("inpSoThichHoSo").value : "";
+    var ra = [];
+    String(v || "").split(",").forEach(function (x) {
+      var t = x.trim().slice(0, 24);
+      if (t && ra.indexOf(t) === -1) ra.push(t);
+    });
+    return ra.slice(0, 10);
+  }
+
   function luuHoSoSuKien(ev) {
     ev.preventDefault();
     if (!sdtHienTai) return; // chưa đăng nhập thì không lưu được
@@ -475,7 +490,9 @@ if (typeof document !== "undefined") {
       gioi: g.value,
       tuoi: tuoi,
       emoji: emojiChon,
-      hienThi: $("chkHienThi").checked
+      hienThi: $("chkHienThi").checked,
+      mucDich: $("selMucDichHoSo") ? $("selMucDichHoSo").value : "", // Gói 2
+      soThich: docSoThichTuForm() // Gói 2
     };
     luuMe(); // lưu vào tqd_users theo số điện thoại đang đăng nhập
     dongBoHoSoLenMayChu(); // chế độ máy chủ: đẩy hồ sơ lên máy chủ (demo thì hàm tự bỏ qua)
@@ -819,7 +836,38 @@ if (typeof document !== "undefined") {
     if (tuoiTu > tuoiDen) { var t = tuoiTu; tuoiTu = tuoiDen; tuoiDen = t; }
     if (isNaN(kmTu) || kmTu < 0) kmTu = 0;
     if (isNaN(kmDen) || kmDen < kmTu) kmDen = 20;
-    return { gioi: locGioiChon, tuoiTu: tuoiTu, tuoiDen: tuoiDen, kmTu: kmTu, kmDen: kmDen };
+    return {
+      gioi: locGioiChon, tuoiTu: tuoiTu, tuoiDen: tuoiDen, kmTu: kmTu, kmDen: kmDen,
+      mucDich: $("locMucDich") ? $("locMucDich").value : "", // Gói 2
+      chungSoThich: !!($("locChungSoThich") && $("locChungSoThich").checked) // Gói 2
+    };
+  }
+
+  // Gói 2: dòng trạng thái hoạt động ("Đang online" / "Hoạt động ... trước")
+  function dongHoatDong(p) {
+    if (!p.hoatDong || !p.hoatDong.luc) return null;
+    var el = document.createElement("p");
+    el.className = "chiTietNguoi chamTrangThai";
+    if (p.hoatDong.online) {
+      el.innerHTML = "<span class=\"dangOnline\">●</span> Đang online";
+    } else {
+      var phut = Math.max(1, Math.round((Date.now() - p.hoatDong.luc) / 60000));
+      var chu = phut < 60 ? phut + " phút trước"
+        : phut < 1440 ? Math.round(phut / 60) + " giờ trước"
+        : Math.round(phut / 1440) + " ngày trước";
+      el.innerHTML = "<span class=\"ngoaiTuyen\">●</span> Hoạt động " + chu;
+    }
+    return el;
+  }
+
+  // Gói 2: chips sở thích (tối đa 4 chip + số còn lại)
+  function dongSoThich(p) {
+    if (!p.soThich || !p.soThich.length) return null;
+    var el = document.createElement("p");
+    el.className = "chiTietNguoi";
+    var hien = p.soThich.slice(0, 4);
+    el.textContent = "🎯 " + hien.join(" · ") + (p.soThich.length > 4 ? " · +" + (p.soThich.length - 4) : "");
+    return el;
   }
 
   function veKetQua(kq) {
@@ -828,7 +876,7 @@ if (typeof document !== "undefined") {
     $("goiYTrong").classList.toggle("an", kq.length > 0);
     kq.forEach(function (p) {
       var the = document.createElement("div");
-      the.className = "theNguoi";
+      the.className = "theNguoi" + (p.dangBoost ? " dangBoostThe" : "") + (p.thichMinh === "sieu" ? " duocSieuThich" : "");
 
       var av = document.createElement("span");
       av.className = "avatarLon";
@@ -854,15 +902,44 @@ if (typeof document !== "undefined") {
       }
       var ct = document.createElement("p");
       ct.className = "chiTietNguoi";
-      ct.textContent = (p.gioi === "nu" ? "♀ Nữ" : "♂ Nam") + " · " + p.tuoi + " tuổi";
+      ct.textContent = (p.gioi === "nu" ? "♀ Nữ" : "♂ Nam") + " · " + p.tuoi + " tuổi" +
+        (p.mucDich && nhanMucDich(p.mucDich) ? " · " + nhanMucDich(p.mucDich) : "");
       giua.appendChild(ten);
       giua.appendChild(ct);
+      var hd = dongHoatDong(p); // Gói 2
+      if (hd) giua.appendChild(hd);
+      if (p.trangThai) { // Gói 2: dòng trạng thái của hồ sơ
+        var tt = document.createElement("p");
+        tt.className = "chiTietNguoi";
+        tt.textContent = "“" + p.trangThai + "”";
+        giua.appendChild(tt);
+      }
+      var st = dongSoThich(p); // Gói 2
+      if (st) giua.appendChild(st);
+      if (p.thichMinh === "sieu") { // Gói 2: người này đã siêu thích mình
+        var nSieu = document.createElement("p");
+        nSieu.innerHTML = "<span class=\"nhanDuocThich\">⭐ Đã siêu thích bạn</span>";
+        giua.appendChild(nSieu);
+      } else if (p.thichMinh === "thuong") {
+        var nThuong = document.createElement("p");
+        nThuong.innerHTML = "<span class=\"nhanDuocThich\">❤️ Đã thích bạn</span>";
+        giua.appendChild(nThuong);
+      }
 
       var phai = document.createElement("div");
       phai.className = "cotPhai";
       var huy = document.createElement("span");
       huy.className = "huyHieuKm";
       huy.textContent = "📍 " + dinhDangKhoangCach(p.khoangCach);
+      phai.appendChild(huy);
+      if (p.dangBoost) { // Gói 2
+        var nBoost = document.createElement("span");
+        nBoost.className = "nhanBoost";
+        nBoost.textContent = "🚀 Đang Boost";
+        phai.appendChild(nBoost);
+      }
+      var hangNut = document.createElement("div");
+      hangNut.className = "cotNutDuoi";
       var nut = document.createElement("button");
       nut.type = "button";
       nut.className = "nutChao";
@@ -870,8 +947,28 @@ if (typeof document !== "undefined") {
       nut.addEventListener("click", function () {
         hienToast("Tính năng nhắn tin sẽ có ở bản máy chủ 💌");
       });
-      phai.appendChild(huy);
-      phai.appendChild(nut);
+      hangNut.appendChild(nut);
+      if (p.id) { // Gói 2: nút Thích + Siêu thích (chỉ hồ sơ máy chủ mới có định danh)
+        var nutThich = document.createElement("button");
+        nutThich.type = "button";
+        nutThich.className = "nutChao nutThich" + (p.daThich ? " dangThich" : "");
+        nutThich.textContent = p.daThich ? "💖 Đã thích" : "❤️ Thích";
+        nutThich.addEventListener("click", function () {
+          if (p.daThich) { hienToast("Bạn đã thích " + p.ten + " rồi 💖"); return; }
+          thichHoSo(p, "thuong", function () { veKetQua(dsQuanhDayHT); });
+        });
+        hangNut.appendChild(nutThich);
+        var nutSieu = document.createElement("button");
+        nutSieu.type = "button";
+        nutSieu.className = "nutChao nutSieuThich";
+        nutSieu.textContent = "⭐ Siêu thích";
+        nutSieu.addEventListener("click", function () {
+          if (p.daThich === "sieu") { hienToast("Bạn đã siêu thích " + p.ten + " rồi ⭐"); return; }
+          thichHoSo(p, "sieu", function () { veKetQua(dsQuanhDayHT); });
+        });
+        hangNut.appendChild(nutSieu);
+      }
+      phai.appendChild(hangNut);
 
       the.appendChild(av);
       the.appendChild(giua);
@@ -887,7 +984,10 @@ if (typeof document !== "undefined") {
       var qs = "?lat=" + encodeURIComponent(viTri.lat) + "&lng=" + encodeURIComponent(viTri.lng) +
         "&gioi=" + encodeURIComponent(loc.gioi) +
         "&tuoiTu=" + loc.tuoiTu + "&tuoiDen=" + loc.tuoiDen +
-        "&kmTu=" + loc.kmTu + "&kmDen=" + loc.kmDen;
+        "&kmTu=" + loc.kmTu + "&kmDen=" + loc.kmDen +
+        (loc.mucDich ? "&mucDich=" + encodeURIComponent(loc.mucDich) : "") + // Gói 2
+        (loc.chungSoThich ? "&chungSoThich=1" : "") + // Gói 2
+        (hoChieuDangDung ? "&hoChieu=1" : ""); // Gói 2: Passport
       goiAPI("/api/nearby" + qs, "GET", null, true).then(function (kq) {
         if (!kq.ok) { hienToast(kq.loi || "Không lấy được danh sách từ máy chủ."); veKetQua([]); return; }
         var ds = (kq.ketQua || []).map(function (p) {
@@ -895,12 +995,20 @@ if (typeof document !== "undefined") {
             ten: p.ten || p.nick, gioi: p.gioi || p.gioiTinh,
             tuoi: p.tuoi, emoji: p.emoji, khoangCach: p.khoangCach,
             vip: p.vip === true, // V4.1
-            xacThuc: p.xacThuc === true // Gói 1
+            xacThuc: p.xacThuc === true, // Gói 1
+            // Gói 2: trường ghép đôi
+            id: p.id || "", mucDich: p.mucDich || "",
+            soThich: Array.isArray(p.soThich) ? p.soThich : [],
+            trangThai: p.trangThai || "",
+            dangBoost: p.dangBoost === true,
+            daThich: p.daThich || "", thichMinh: p.thichMinh || "",
+            hoatDong: p.hoatDong || null
           };
         });
+        dsQuanhDayHT = ds; // Gói 2: giữ bản đầy đủ cho chế độ quẹt
         // V4.1: hết lượt xem miễn phí trong ngày -> hiện banner mời nâng VIP
         $("bannerHetLuot").classList.toggle("an", !kq.hetLuot);
-        veKetQua(ds);
+        if (cheDoQuet) { chiSoQuet = 0; veQuet(); } else { veKetQua(ds); } // Gói 2
       });
       return;
     }
@@ -929,6 +1037,355 @@ if (typeof document !== "undefined") {
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
+  }
+
+  // ======================================================================
+  // ===== GÓI 2: GHÉP ĐÔI (thích/quẹt, ai đã thích bạn, siêu thích, =====
+  // ===== Boost, Passport, trạng thái online)                        =====
+  // ======================================================================
+  var dsQuanhDayHT = [];        // kết quả quanh đây gần nhất (đầy đủ trường Gói 2)
+  var cheDoQuet = false;        // đang xem dạng quẹt?
+  var chiSoQuet = 0;            // vị trí thẻ hiện tại trong hàng đợi quẹt
+  var trangThaiGD = null;       // trạng thái ghép đôi gần nhất từ máy chủ
+  var hoChieuDangDung = false;  // lần Tìm sắp tới có dùng vị trí hộ chiếu không
+  var idDemBoost = null;        // interval đếm ngược Boost
+  var boostHetLucDia = 0;       // mốc hết Boost theo đồng hồ của máy này
+  var aiThichDangMo = false;    // mục Ai đã thích bạn đang mở?
+  var ghepDoiDangMo = false;    // mục Ghép đôi của tôi đang mở?
+
+  var NHAN_MUC_DICH = {
+    "ket-ban": "🤝 Kết bạn", "hen-ho": "💘 Hẹn hò",
+    "tro-chuyen": "💬 Trò chuyện", "nguoi-yeu": "💍 Tìm người yêu"
+  };
+  function nhanMucDich(md) { return NHAN_MUC_DICH[md] || ""; }
+
+  function datHuyBadge(id, so) {
+    var e = $(id);
+    if (!e) return;
+    e.textContent = so || 0;
+    e.classList.toggle("an", !so);
+  }
+
+  // ---------- Trạng thái + hạn mức ghép đôi ----------
+  function taiTrangThaiGhepDoi() {
+    if (!TQD_SERVER || !tokenMayChu) return;
+    goiAPI("/api/ghep-doi/trang-thai", "GET", null, true).then(function (kq) {
+      if (!kq.ok) return;
+      trangThaiGD = kq;
+      capNhatGiaoDienGhepDoi();
+    });
+  }
+
+  function capNhatGiaoDienGhepDoi() {
+    var kq = trangThaiGD;
+    if (!kq) return;
+    var dong = "⭐ Siêu thích hôm nay còn " + kq.sieuThichConLai + "/" + kq.sieuThichHanMuc + " lượt";
+    dong += kq.laVIP ? " · 🚀 Boost còn " + kq.boostConLai + " lượt hôm nay" : " · 🚀 Boost là tính năng VIP";
+    if ($("txtHanMucGhepDoi")) $("txtHanMucGhepDoi").textContent = dong;
+    datHuyBadge("huySoThich", kq.soNguoiThich);
+    datHuyBadge("huySoGhepDoi", kq.soGhepDoi);
+    // Boost: nút + đếm ngược
+    var btnB = $("btnBoost");
+    if (btnB) btnB.textContent = kq.dangBoost ? "🚀 Đang Boost…" : "🚀 Boost hồ sơ 30 phút";
+    if (kq.dangBoost && kq.boostConLaiGiay > 0) {
+      boostHetLucDia = Date.now() + kq.boostConLaiGiay * 1000;
+      batDemNguocBoost();
+    } else {
+      dungDemNguocBoost();
+      if ($("txtDemNguocBoost")) $("txtDemNguocBoost").textContent = "";
+    }
+    // Passport: trạng thái + điền sẵn form từ hộ chiếu đã lưu
+    var hc = kq.hoChieu;
+    if ($("txtHoChieu")) {
+      $("txtHoChieu").textContent = !hc
+        ? "Đang tìm theo vị trí thật của bạn."
+        : hoChieuDangDung
+          ? "🧳 Đang tìm theo Hộ chiếu tại: " + hc.ten
+          : "🧳 Hộ chiếu đã lưu tại: " + hc.ten + " (đang tìm theo vị trí thật — bấm “Dùng vị trí hộ chiếu” để chuyển).";
+    }
+    if ($("btnTatHoChieu")) $("btnTatHoChieu").classList.toggle("an", !hc);
+    if (hc && $("inpTenHoChieu") && !$("inpTenHoChieu").value) {
+      $("inpTenHoChieu").value = hc.ten || "";
+      $("inpLatHoChieu").value = hc.lat;
+      $("inpLngHoChieu").value = hc.lng;
+    }
+    if ($("goiYHoChieuKhoa")) $("goiYHoChieuKhoa").classList.toggle("an", kq.laVIP === true);
+    // Đồng bộ mục đích/sở thích từ máy chủ về máy này nếu máy chưa có (đổi máy không mất)
+    if (me) {
+      var doi = false;
+      if (!me.mucDich && kq.mucDich) { me.mucDich = kq.mucDich; doi = true; }
+      if ((!Array.isArray(me.soThich) || !me.soThich.length) && Array.isArray(kq.soThich) && kq.soThich.length) {
+        me.soThich = kq.soThich; doi = true;
+      }
+      if (doi) luuMe();
+    }
+  }
+
+  function batDemNguocBoost() {
+    dungDemNguocBoost();
+    capNhatDemBoost();
+    idDemBoost = setInterval(capNhatDemBoost, 1000);
+  }
+  function dungDemNguocBoost() {
+    if (idDemBoost) { clearInterval(idDemBoost); idDemBoost = null; }
+  }
+  function capNhatDemBoost() {
+    var con = Math.max(0, Math.round((boostHetLucDia - Date.now()) / 1000));
+    var el = $("txtDemNguocBoost");
+    if (con <= 0) {
+      dungDemNguocBoost();
+      if (el) el.textContent = "";
+      taiTrangThaiGhepDoi();
+      return;
+    }
+    var ph = Math.floor(con / 60), gi = con % 60;
+    if (el) el.textContent = "⏳ Boost còn " + ph + ":" + (gi < 10 ? "0" : "") + gi;
+  }
+
+  // ---------- Thích / Siêu thích / Bỏ qua ----------
+  function thichHoSo(p, loai, sauKhi) {
+    if (!p || !p.id) {
+      hienToast("Hồ sơ mẫu (demo) — hãy đăng nhập bản máy chủ để dùng Ghép đôi 💞");
+      return;
+    }
+    goiAPI("/api/ghep-doi/thich", "POST", { id: p.id, loai: loai }, true).then(function (kq) {
+      if (!kq.ok) {
+        hienToast(kq.loi || "Chưa thích được, thử lại nhé.");
+        taiTrangThaiGhepDoi();
+        return;
+      }
+      p.daThich = kq.loai || loai;
+      if (kq.ghepDoi) {
+        hienToast("🎉 GHÉP ĐÔI với " + (p.ten || p.nick) + "! Hai bạn đã nhắn tin được cho nhau — xem mục 💞 Ghép đôi nhé.");
+      } else if (loai === "sieu") {
+        hienToast("⭐ Đã gửi Siêu thích tới " + (p.ten || p.nick));
+      } else {
+        hienToast("❤️ Đã thích " + (p.ten || p.nick));
+      }
+      taiTrangThaiGhepDoi();
+      if (typeof sauKhi === "function") sauKhi(kq);
+    });
+  }
+
+  function boQuaHoSo(p, sauKhi) {
+    if (!p || !p.id) { if (typeof sauKhi === "function") sauKhi(); return; }
+    goiAPI("/api/ghep-doi/bo-qua", "POST", { id: p.id }, true).then(function (kq) {
+      if (!kq.ok) { hienToast(kq.loi || "Chưa bỏ qua được."); return; }
+      dsQuanhDayHT = dsQuanhDayHT.filter(function (x) { return x.id !== p.id; });
+      taiTrangThaiGhepDoi();
+      if (typeof sauKhi === "function") sauKhi(kq);
+    });
+  }
+
+  // ---------- Chế độ quẹt ----------
+  function hangDoiQuet() {
+    return dsQuanhDayHT.filter(function (p) { return !p.daThich; });
+  }
+
+  function taoTheQuet(p) {
+    var the = document.createElement("div");
+    the.className = "theNguoi theQuetLon" + (p.dangBoost ? " dangBoostThe" : "") + (p.thichMinh === "sieu" ? " duocSieuThich" : "");
+    var av = document.createElement("span");
+    av.className = "avatarLon";
+    av.textContent = p.emoji;
+    the.appendChild(av);
+    var ten = document.createElement("p");
+    ten.className = "tenNguoi";
+    ten.textContent = p.ten + (p.vip ? " ⭐" : "") + (p.xacThuc ? " ✅" : "");
+    the.appendChild(ten);
+    var ct = document.createElement("p");
+    ct.className = "chiTietNguoi";
+    ct.textContent = (p.gioi === "nu" ? "♀ Nữ" : "♂ Nam") + " · " + p.tuoi + " tuổi · 📍 " +
+      dinhDangKhoangCach(p.khoangCach) +
+      (p.mucDich && nhanMucDich(p.mucDich) ? " · " + nhanMucDich(p.mucDich) : "");
+    the.appendChild(ct);
+    var hd = dongHoatDong(p);
+    if (hd) the.appendChild(hd);
+    if (p.trangThai) {
+      var tt = document.createElement("p");
+      tt.className = "chiTietNguoi";
+      tt.textContent = "“" + p.trangThai + "”";
+      the.appendChild(tt);
+    }
+    var st = dongSoThich(p);
+    if (st) the.appendChild(st);
+    if (p.dangBoost) {
+      var nb = document.createElement("p");
+      nb.innerHTML = "<span class=\"nhanBoost\">🚀 Đang Boost</span>";
+      the.appendChild(nb);
+    }
+    if (p.thichMinh === "sieu") {
+      var ns = document.createElement("p");
+      ns.innerHTML = "<span class=\"nhanDuocThich\">⭐ Đã siêu thích bạn</span>";
+      the.appendChild(ns);
+    } else if (p.thichMinh === "thuong") {
+      var nt = document.createElement("p");
+      nt.innerHTML = "<span class=\"nhanDuocThich\">❤️ Đã thích bạn</span>";
+      the.appendChild(nt);
+    }
+    return the;
+  }
+
+  function veQuet() {
+    var hop = $("theQuet");
+    if (!hop) return;
+    hop.innerHTML = "";
+    var hang = hangDoiQuet();
+    if (chiSoQuet >= hang.length) chiSoQuet = Math.max(0, hang.length - 1);
+    var p = hang[chiSoQuet];
+    $("txtQuetTrong").classList.toggle("an", !!p);
+    ["btnQuetBoQua", "btnQuetThich", "btnQuetSieuThich"].forEach(function (id) {
+      var b = $(id);
+      if (b) b.disabled = !p;
+    });
+    if (p) hop.appendChild(taoTheQuet(p));
+  }
+
+  function datCheDoQuet(quet) {
+    if (quet && (!TQD_SERVER || !tokenMayChu)) {
+      hienToast("Chế độ quẹt là tính năng bản máy chủ — hãy đăng nhập để quẹt tìm bạn 💞");
+      return;
+    }
+    cheDoQuet = !!quet;
+    $("ketQua").classList.toggle("an", cheDoQuet);
+    $("khungQuet").classList.toggle("an", !cheDoQuet);
+    $("btnCheDoLuoi").className = cheDoQuet ? "nutPhu nho" : "nutChinh nho";
+    $("btnCheDoQuet").className = cheDoQuet ? "nutChinh nho" : "nutPhu nho";
+    if (cheDoQuet) { chiSoQuet = 0; veQuet(); }
+    else veKetQua(dsQuanhDayHT);
+  }
+
+  // ---------- Ai đã thích bạn ----------
+  function taoTheBiMo(m) {
+    var the = document.createElement("div");
+    the.className = "theNguoi";
+    var av = document.createElement("span");
+    av.className = "avatarLon anhMoGhepDoi";
+    av.textContent = "🙈";
+    var giua = document.createElement("div");
+    giua.className = "thongTinNguoi";
+    var ten = document.createElement("p");
+    ten.className = "tenNguoi";
+    ten.textContent = "Một người dùng HIALO";
+    var ct = document.createElement("p");
+    ct.className = "chiTietNguoi";
+    ct.textContent = m.sieu ? "⭐ Đã siêu thích bạn" : "❤️ Đã thích bạn";
+    giua.appendChild(ten);
+    giua.appendChild(ct);
+    the.appendChild(av);
+    the.appendChild(giua);
+    return the;
+  }
+
+  function taiAiThich() {
+    goiAPI("/api/ghep-doi/ai-thich", "GET", null, true).then(function (kq) {
+      if (!kq.ok) { hienToast(kq.loi || "Không tải được danh sách ai đã thích bạn."); return; }
+      var hop = $("dsAiThich");
+      hop.innerHTML = "";
+      $("trongAiThich").classList.toggle("an", kq.tongSo > 0);
+      $("goiYAiThichVip").classList.toggle("an", kq.laVIP === true || kq.tongSo === 0);
+      (kq.danhSach || []).forEach(function (m) {
+        if (m.biMo) { hop.appendChild(taoTheBiMo(m)); return; }
+        var cot = document.createElement("div");
+        cot.className = "cotNutDuoi";
+        cot.appendChild(taoNutNhan("❤️ Thích lại", "nutChinh nho", function () {
+          thichHoSo({ id: m.id, ten: m.nick }, "thuong", function () { taiAiThich(); });
+        }));
+        cot.appendChild(taoNutNhan("✖ Bỏ qua", "nutPhu nho", function () {
+          boQuaHoSo({ id: m.id }, function () { taiAiThich(); });
+        }));
+        var chiTiet = (m.gioiTinh === "nu" ? "♀ Nữ" : "♂ Nam") + " · " + m.tuoi + " tuổi" +
+          (typeof m.khoangCach === "number" ? " · 📍 " + dinhDangKhoangCach(m.khoangCach) : "") +
+          (m.mucDich && nhanMucDich(m.mucDich) ? " · " + nhanMucDich(m.mucDich) : "") +
+          (m.sieu ? " · ⭐ Siêu thích" : "");
+        var the = taoTheNguoi(m.emoji, m.nick, chiTiet, cot);
+        ganHuyHieuXacThuc(the, m.xacThuc === true);
+        hop.appendChild(the);
+      });
+    });
+  }
+
+  // ---------- Ghép đôi của tôi ----------
+  function taiGhepDoiCuaToi() {
+    goiAPI("/api/ghep-doi/danh-sach", "GET", null, true).then(function (kq) {
+      if (!kq.ok) { hienToast(kq.loi || "Không tải được danh sách ghép đôi."); return; }
+      var hop = $("dsGhepDoi");
+      hop.innerHTML = "";
+      var ds = kq.danhSach || [];
+      $("trongGhepDoi").classList.toggle("an", ds.length > 0);
+      ds.forEach(function (m) {
+        var cot = document.createElement("div");
+        cot.className = "cotNutDuoi";
+        cot.appendChild(taoNutNhan("💬 Nhắn tin", "nutChinh nho", function () {
+          moChat(m.sdt, m.nick, m.emoji, { laBanBe: false, xacThuc: m.xacThuc === true });
+        }));
+        cot.appendChild(taoNutNhan("✖ Bỏ ghép", "nutPhu nho", function () {
+          goiAPI("/api/ghep-doi/bo-thich", "POST", { id: m.id }, true).then(function (kq2) {
+            if (!kq2.ok) { hienToast(kq2.loi || "Chưa bỏ ghép được."); return; }
+            hienToast("Đã bỏ ghép đôi với " + m.nick);
+            taiGhepDoiCuaToi();
+            taiTrangThaiGhepDoi();
+          });
+        }));
+        var chiTiet = (m.gioiTinh === "nu" ? "♀ Nữ" : "♂ Nam") + " · " + m.tuoi + " tuổi" +
+          (typeof m.khoangCach === "number" ? " · 📍 " + dinhDangKhoangCach(m.khoangCach) : "") +
+          (m.mucDich && nhanMucDich(m.mucDich) ? " · " + nhanMucDich(m.mucDich) : "");
+        var the = taoTheNguoi(m.emoji, m.nick, chiTiet, cot);
+        ganHuyHieuXacThuc(the, m.xacThuc === true);
+        hop.appendChild(the);
+      });
+    });
+  }
+
+  // ---------- Boost ----------
+  function batBoostHoSo() {
+    goiAPI("/api/ghep-doi/boost", "POST", {}, true).then(function (kq) {
+      if (!kq.ok) { hienToast(kq.loi || "Chưa Boost được hồ sơ."); return; }
+      hienToast("🚀 Đã Boost! Hồ sơ của bạn đứng đầu kết quả tìm quanh đây trong 30 phút.");
+      taiTrangThaiGhepDoi();
+    });
+  }
+
+  // ---------- Passport ----------
+  function chonThanhPhoHoChieu() {
+    var sel = $("selThanhPhoHoChieu");
+    if (!sel) return;
+    var opt = sel.options[sel.selectedIndex];
+    if (!opt || !opt.getAttribute("data-lat")) return;
+    $("inpTenHoChieu").value = opt.textContent;
+    $("inpLatHoChieu").value = opt.getAttribute("data-lat");
+    $("inpLngHoChieu").value = opt.getAttribute("data-lng");
+  }
+
+  function datHoChieuTuForm() {
+    var ten = $("inpTenHoChieu").value.trim();
+    var lat = parseFloat($("inpLatHoChieu").value);
+    var lng = parseFloat($("inpLngHoChieu").value);
+    if (!ten || isNaN(lat) || isNaN(lng)) {
+      hienToast("Hãy chọn thành phố có sẵn hoặc nhập tên nơi + tọa độ (lat/lng) nhé.");
+      return;
+    }
+    goiAPI("/api/ho-chieu", "POST", { ten: ten, lat: lat, lng: lng }, true).then(function (kq) {
+      if (!kq.ok) { hienToast(kq.loi || "Chưa đặt được hộ chiếu."); return; }
+      hoChieuDangDung = true;
+      hienToast("🧳 Đã bật Hộ chiếu tại " + ten + " — đang tìm quanh vị trí này.");
+      taiTrangThaiGhepDoi();
+      chayTim();
+    });
+  }
+
+  function xoaHoChieu() {
+    goiAPI("/api/ho-chieu/xoa", "POST", {}, true).then(function (kq) {
+      if (!kq.ok) { hienToast(kq.loi || "Chưa xóa được hộ chiếu."); return; }
+      hoChieuDangDung = false;
+      $("inpTenHoChieu").value = "";
+      $("inpLatHoChieu").value = "";
+      $("inpLngHoChieu").value = "";
+      if ($("selThanhPhoHoChieu")) $("selThanhPhoHoChieu").selectedIndex = 0;
+      hienToast("📍 Đã xóa hộ chiếu — quay về tìm theo vị trí thật của bạn.");
+      taiTrangThaiGhepDoi();
+      chayTim();
+    });
   }
 
   // ======================================================================
@@ -988,6 +1445,7 @@ if (typeof document !== "undefined") {
     window.scrollTo(0, 0);
     if (!TQD_SERVER || !sdtHienTai) return;
     if (ten === "tinnhan" && !chatVoi) taiDsTroChuyen();
+    if (ten === "khampha") taiTrangThaiGhepDoi(); // Gói 2
     if (ten === "danhba") { taiLoiMoi(); taiBanBe(); }
     if (ten === "tuongnha") taiBaiDang();
     if (ten === "canhan") { taiCaiDat(); taiDsChanCaNhan(); taiTrangThaiVip(); }
@@ -4295,6 +4753,8 @@ if (typeof document !== "undefined") {
       // Chế độ demo (chưa có máy chủ): ẩn hẳn các mục chỉ-dành-cho-máy-chủ, giữ nguyên giao diện v3
       $("mucTienIch").classList.add("an");
       $("mucVip").classList.add("an");
+      if ($("mucGhepDoi")) $("mucGhepDoi").classList.add("an"); // Gói 2
+      if ($("khungHoChieu")) $("khungHoChieu").classList.add("an"); // Gói 2
     }
     // ===== V4.1: gói VIP =====
     $("btnDonCuaToi").addEventListener("click", taiDonCuaToi);
@@ -4303,6 +4763,45 @@ if (typeof document !== "undefined") {
       var muc = $("mucVip");
       if (muc) muc.scrollIntoView({ behavior: "smooth" });
     });
+    // ===== Gói 2: sự kiện Ghép đôi =====
+    $("btnCheDoLuoi").addEventListener("click", function () { datCheDoQuet(false); });
+    $("btnCheDoQuet").addEventListener("click", function () { datCheDoQuet(true); });
+    $("btnQuetBoQua").addEventListener("click", function () {
+      var p = hangDoiQuet()[chiSoQuet];
+      if (p) boQuaHoSo(p, function () { veQuet(); });
+    });
+    $("btnQuetThich").addEventListener("click", function () {
+      var p = hangDoiQuet()[chiSoQuet];
+      if (p) thichHoSo(p, "thuong", function () { veQuet(); });
+    });
+    $("btnQuetSieuThich").addEventListener("click", function () {
+      var p = hangDoiQuet()[chiSoQuet];
+      if (p) thichHoSo(p, "sieu", function () { veQuet(); });
+    });
+    $("btnBoost").addEventListener("click", batBoostHoSo);
+    $("btnMoAiThich").addEventListener("click", function () {
+      aiThichDangMo = !aiThichDangMo;
+      $("dsAiThich").classList.toggle("an", !aiThichDangMo);
+      if (aiThichDangMo) taiAiThich();
+      else {
+        $("trongAiThich").classList.add("an");
+        $("goiYAiThichVip").classList.add("an");
+      }
+    });
+    $("btnMoGhepDoi").addEventListener("click", function () {
+      ghepDoiDangMo = !ghepDoiDangMo;
+      $("dsGhepDoi").classList.toggle("an", !ghepDoiDangMo);
+      if (ghepDoiDangMo) taiGhepDoiCuaToi();
+      else $("trongGhepDoi").classList.add("an");
+    });
+    $("btnLenVipTuAiThich").addEventListener("click", function () {
+      chonTab("canhan");
+      var muc = $("mucVip");
+      if (muc) muc.scrollIntoView({ behavior: "smooth" });
+    });
+    $("selThanhPhoHoChieu").addEventListener("change", chonThanhPhoHoChieu);
+    $("btnDatHoChieu").addEventListener("click", datHoChieuTuForm);
+    $("btnTatHoChieu").addEventListener("click", xoaHoChieu);
     var tabBtns = $("thanhTab").querySelectorAll(".tabBtn");
     for (var ti = 0; ti < tabBtns.length; ti++) {
       tabBtns[ti].addEventListener("click", function () { chonTab(this.getAttribute("data-tab")); });

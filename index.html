@@ -111,6 +111,18 @@ try {
         <span class="nhan">Chọn 1 emoji làm ảnh đại diện</span>
         <div id="chonEmoji" class="luoiEmoji"></div>
 
+        <label class="nhan" for="selMucDichHoSo">Mục đích kết bạn</label>
+        <select id="selMucDichHoSo" class="chonSelect">
+          <option value="">— Chưa chọn —</option>
+          <option value="ket-ban">🤝 Kết bạn</option>
+          <option value="hen-ho">💘 Hẹn hò</option>
+          <option value="tro-chuyen">💬 Trò chuyện</option>
+          <option value="nguoi-yeu">💍 Tìm người yêu</option>
+        </select>
+
+        <label class="nhan" for="inpSoThichHoSo">Sở thích (cách nhau bằng dấu phẩy, tối đa 10)</label>
+        <input id="inpSoThichHoSo" type="text" maxlength="250" placeholder="Ví dụ: cà phê, du lịch, bóng đá, nấu ăn">
+
         <button type="submit" id="btnLuuHoSo" class="nutChinh">💾 Lưu hồ sơ</button>
         <p class="loi" id="loiForm"></p>
       </form>
@@ -701,6 +713,79 @@ try {
       <p class="moTa">Kéo thanh trượt để chỉnh nhanh ô "đến (km)": <strong><span id="kmTruotVal">20</span> km</strong></p>
       <p class="moTa an" id="ghiChuKmFree">⭐ <strong>Bản miễn phí: tối đa 5 km</strong> — nâng gói VIP để tìm tới 20 km.</p>
 
+      <label class="nhan" for="locMucDich">Mục đích kết bạn</label>
+      <select id="locMucDich" class="chonSelect">
+        <option value="">Tất cả mục đích</option>
+        <option value="ket-ban">🤝 Kết bạn</option>
+        <option value="hen-ho">💘 Hẹn hò</option>
+        <option value="tro-chuyen">💬 Trò chuyện</option>
+        <option value="nguoi-yeu">💍 Tìm người yêu</option>
+      </select>
+
+      <p class="moTa"><label><input type="checkbox" id="locChungSoThich"> Chỉ hiện người có sở thích chung với tôi</label></p>
+
+      <div class="khungHoChieu" id="khungHoChieu">
+        <span class="nhan">🧳 Hộ chiếu — tìm ở vị trí khác <span class="huyVipNho">VIP</span></span>
+        <p class="moTa" id="txtHoChieu">Đang tìm theo vị trí thật của bạn.</p>
+        <label class="nhan" for="selThanhPhoHoChieu">Chọn thành phố có sẵn</label>
+        <select id="selThanhPhoHoChieu" class="chonSelect">
+          <option value="">— Chọn thành phố —</option>
+          <optgroup label="Việt Nam">
+            <option data-lat="21.0285" data-lng="105.8542">Hà Nội</option>
+            <option data-lat="10.7769" data-lng="106.7009">TP. Hồ Chí Minh</option>
+            <option data-lat="16.0544" data-lng="108.2022">Đà Nẵng</option>
+            <option data-lat="20.8449" data-lng="106.6881">Hải Phòng</option>
+            <option data-lat="10.0452" data-lng="105.7469">Cần Thơ</option>
+            <option data-lat="12.2388" data-lng="109.1967">Nha Trang</option>
+            <option data-lat="11.9404" data-lng="108.4583">Đà Lạt</option>
+            <option data-lat="16.4637" data-lng="107.5909">Huế</option>
+            <option data-lat="10.3460" data-lng="107.0843">Vũng Tàu</option>
+          </optgroup>
+          <optgroup label="Philippines">
+            <option data-lat="14.5995" data-lng="120.9842">Manila</option>
+            <option data-lat="10.3157" data-lng="123.8854">Cebu</option>
+            <option data-lat="7.1907" data-lng="125.4553">Davao</option>
+          </optgroup>
+          <optgroup label="Indonesia">
+            <option data-lat="-6.2088" data-lng="106.8456">Jakarta</option>
+            <option data-lat="-7.2575" data-lng="112.7521">Surabaya</option>
+            <option data-lat="-8.6705" data-lng="115.2126">Bali (Denpasar)</option>
+            <option data-lat="-6.9175" data-lng="107.6191">Bandung</option>
+          </optgroup>
+          <optgroup label="Thái Lan">
+            <option data-lat="13.7563" data-lng="100.5018">Bangkok</option>
+            <option data-lat="18.7883" data-lng="98.9853">Chiang Mai</option>
+            <option data-lat="12.9236" data-lng="100.8825">Pattaya</option>
+            <option data-lat="7.8804" data-lng="98.3923">Phuket</option>
+          </optgroup>
+          <optgroup label="Campuchia">
+            <option data-lat="11.5449" data-lng="104.8922">Phnom Penh</option>
+          </optgroup>
+        </select>
+        <div class="haiCot">
+          <div>
+            <label class="nhan" for="inpTenHoChieu">Tên nơi (tự nhập)</label>
+            <input id="inpTenHoChieu" type="text" maxlength="60" placeholder="Ví dụ: Manila">
+          </div>
+          <div>
+            <label class="nhan" for="inpLatHoChieu">Vĩ độ (lat)</label>
+            <input id="inpLatHoChieu" type="number" step="any" placeholder="14.5995">
+          </div>
+        </div>
+        <div class="haiCot">
+          <div>
+            <label class="nhan" for="inpLngHoChieu">Kinh độ (lng)</label>
+            <input id="inpLngHoChieu" type="number" step="any" placeholder="120.9842">
+          </div>
+          <div></div>
+        </div>
+        <div class="hangHaiNut">
+          <button type="button" id="btnDatHoChieu" class="nutChinh nho">🧳 Dùng vị trí hộ chiếu</button>
+          <button type="button" id="btnTatHoChieu" class="nutPhu nho an">🗑 Xóa hộ chiếu</button>
+        </div>
+        <p class="moTa an" id="goiYHoChieuKhoa">⭐ Hộ chiếu là tính năng VIP — nâng VIP để tìm người ở thành phố/quốc gia khác mà không cần tới nơi.</p>
+      </div>
+
       <button type="button" id="btnTim" class="nutChinh">🔎 Tìm</button>
     </div>
   </section>
@@ -709,9 +794,41 @@ try {
   <section class="the">
     <h2>💞 Kết quả quanh bạn</h2>
     <p class="nhanDemo" id="nhanDemoKetQua">🧪 Hồ sơ mẫu (demo) — bản thật sẽ là người dùng thật tự đăng ký</p>
+    <div class="hangHaiNut">
+      <button type="button" id="btnCheDoLuoi" class="nutChinh nho">🔲 Dạng lưới</button>
+      <button type="button" id="btnCheDoQuet" class="nutPhu nho">👆 Dạng quẹt</button>
+    </div>
     <div id="bannerHetLuot" class="nhanDemo an">Bạn đã xem hết 10 hồ sơ miễn phí hôm nay. Nâng cấp VIP để tìm không giới hạn. <button type="button" id="btnLenVip" class="nutChinh nho">⭐ Nâng cấp VIP</button></div>
     <div id="ketQua" class="danhSach"></div>
     <p id="goiYTrong" class="goiY an">Chưa thấy ai trong vùng lọc này. Thử nới rộng độ tuổi hoặc tăng khoảng cách "đến" lên rồi bấm Tìm lại nhé.</p>
+    <div id="khungQuet" class="an">
+      <div id="theQuet"></div>
+      <div class="hangBaNut">
+        <button type="button" id="btnQuetBoQua" class="nutPhu">✖ Bỏ qua</button>
+        <button type="button" id="btnQuetThich" class="nutChinh">❤️ Thích</button>
+        <button type="button" id="btnQuetSieuThich" class="nutPhu">⭐ Siêu thích</button>
+      </div>
+      <p id="txtQuetTrong" class="goiY an">Đã quẹt hết hồ sơ trong vùng lọc này. Nới rộng bộ lọc rồi bấm Tìm lại nhé.</p>
+    </div>
+  </section>
+
+  <!-- ===== GÓI 2: GHÉP ĐÔI ===== -->
+  <section class="the" id="mucGhepDoi">
+    <h2>💞 Ghép đôi</h2>
+    <p class="moTa" id="txtHanMucGhepDoi">Bấm Tìm quanh đây để xem hạn mức Siêu thích / Boost của bạn.</p>
+    <div class="hangHaiNut">
+      <button type="button" id="btnBoost" class="nutChinh nho">🚀 Boost hồ sơ 30 phút</button>
+      <span class="moTa" id="txtDemNguocBoost"></span>
+    </div>
+    <div class="hangHaiNut">
+      <button type="button" id="btnMoAiThich" class="nutPhu nho">❤️ Ai đã thích bạn <span id="huySoThich" class="huyBadge an">0</span></button>
+      <button type="button" id="btnMoGhepDoi" class="nutPhu nho">💞 Ghép đôi của tôi <span id="huySoGhepDoi" class="huyBadge an">0</span></button>
+    </div>
+    <div id="dsAiThich" class="danhSach an"></div>
+    <p class="goiY an" id="trongAiThich">Chưa có ai thích bạn. Hãy Boost hồ sơ hoặc mở rộng vùng tìm kiếm nhé.</p>
+    <p class="nhanDemo an" id="goiYAiThichVip">⭐ Tài khoản thường chỉ thấy danh sách bị mờ — nâng VIP để thấy rõ ai đã thích bạn. <button type="button" id="btnLenVipTuAiThich" class="nutChinh nho">⭐ Nâng cấp VIP</button></p>
+    <div id="dsGhepDoi" class="danhSach an"></div>
+    <p class="goiY an" id="trongGhepDoi">Chưa có ghép đôi nào. Thích một hồ sơ — nếu họ cũng thích bạn, hai người sẽ được ghép đôi và nhắn tin được ngay.</p>
   </section>
 
   <!-- ===== V4: LƯỚI TIỆN ÍCH (chỉ chế độ máy chủ) ===== -->
