@@ -202,6 +202,494 @@ function dinhDangKhoangCach(km) {
   return km.toFixed(1).replace(".", ",") + " km";
 }
 
+// ================= GÓI 5: ĐA NGÔN NGỮ (i18n) =================
+// Bảng chuỗi theo KHÓA cho 5 ngôn ngữ: vi (gốc) · en · tl (Tagalog) · id (Bahasa
+// Indonesia) · th (ไทย). Phần tử HTML gắn data-i18n (nội dung) / data-i18n-ph
+// (placeholder) / data-i18n-title (title) sẽ được apDungNgonNgu() quét và thay mỗi
+// khi đổi ngôn ngữ — áp dụng ngay, không tải lại trang. Chuỗi thiếu ở một ngôn ngữ
+// rơi về TIẾNG ANH rồi TIẾNG VIỆT (hàm trichChuoi) — không bao giờ hiện khóa thô.
+// Ngôn ngữ đã chọn lưu ở máy (localStorage "hialo_ngon_ngu") VÀ trên máy chủ theo
+// tài khoản (caiDat.ngonNgu) để đồng bộ đa thiết bị; chưa chọn lần nào thì suy từ
+// ngôn ngữ trình duyệt. Ngôn ngữ đã chọn cũng là đích mặc định của nút Dịch (Gói 4).
+var NGON_NGU_HOP_LE_G5 = ["vi", "en", "tl", "id", "th"];
+var TEN_NGON_NGU_GOC = { vi: "Tiếng Việt", en: "English", tl: "Tagalog", id: "Bahasa Indonesia", th: "ไทย" };
+var BANG_NGON_NGU = {
+vi: {
+  phu_de: "Tìm người ở gần bạn — theo giới tính, độ tuổi và khoảng cách",
+  tim_kiem_ph: "Tìm trong HIALO: đăng nhập, chính sách, hỗ trợ…",
+  tab_tinnhan: "Tin nhắn", tab_danhba: "Danh bạ", tab_khampha: "Khám phá", tab_tuongnha: "Tường nhà", tab_canhan: "Cá nhân",
+  ho_so_tieu_de: "👤 Tài khoản & hồ sơ của tôi",
+  nhan_sdt: "Số điện thoại của bạn",
+  sdt_ph: "Ví dụ: 0912 345 678",
+  mo_ta_sdt: "Đăng ký / đăng nhập bằng số điện thoại. Chỉ nhận <strong>số di động Việt Nam</strong> (10 số, đầu 03 / 05 / 07 / 08 / 09) — không nhận số bàn, số nước ngoài, số tổng đài 1900 / 1800.",
+  btn_nhan_otp: "📩 Nhận mã OTP",
+  nhan_otp: "Mã OTP", btn_xac_nhan: "✅ Xác nhận", btn_gui_lai: "Gửi lại mã", btn_doi_so: "← Đổi số điện thoại",
+  hoac_tiep_tuc: "— hoặc tiếp tục bằng —", btn_dn_facebook: "Đăng nhập bằng Facebook",
+  nhan_nick: "Nick (tên hiển thị)", nhan_gioi: "Giới tính", gioi_nam: "🧑 Nam", gioi_nu: "👩 Nữ",
+  nhan_tuoi: "Tuổi", nhan_emoji: "Chọn 1 emoji làm ảnh đại diện",
+  nhan_muc_dich: "Mục đích kết bạn", chua_chon: "— Chưa chọn —", tat_ca_muc_dich: "Tất cả mục đích",
+  md_ket_ban: "🤝 Kết bạn", md_hen_ho: "💘 Hẹn hò", md_tro_chuyen: "💬 Trò chuyện", md_nguoi_yeu: "💍 Tìm người yêu",
+  nhan_so_thich: "Sở thích (cách nhau bằng dấu phẩy, tối đa 10)", btn_luu_ho_so: "💾 Lưu hồ sơ",
+  cai_dat: "Cài đặt", trang_thai_ph: "Trạng thái của bạn (tối đa 60 ký tự)", btn_luu: "💾 Lưu", btn_huy: "Hủy",
+  hub_hcloud_mo: "Không gian lưu trữ dữ liệu trên đám mây", hub_hstyle_mo: "Hình nền và nhạc cho cuộc gọi Hialo",
+  hub_tai_lieu: "Tài liệu của tôi", hub_tai_lieu_mo: "Tin nhắn và tệp quan trọng bạn đã lưu",
+  hub_du_lieu: "Dữ liệu lưu trữ", hub_du_lieu_mo: "Dung lượng tệp bạn đã gửi",
+  hub_viqr: "Ví QR", hub_viqr_mo: "Mã QR ngân hàng, ví điện tử của bạn",
+  hub_taikhoan: "Tài khoản và bảo mật", hub_taikhoan_mo: "Hồ sơ, khóa PIN, phiên đăng nhập",
+  hub_riengtu: "Quyền riêng tư", hub_riengtu_mo: "Ai tìm thấy, nhắn tin và gọi cho bạn",
+  cd_tieu_de: "Cài đặt",
+  cd_tin_nhan: "Tin nhắn", cd_tin_nhan_mo: "Cách gửi và hiển thị tin nhắn",
+  cd_cuoc_goi: "Cuộc gọi", cd_cuoc_goi_mo: "Ai gọi được cho bạn, rung khi có cuộc gọi",
+  cd_tuong_nha: "Tường nhà", cd_tuong_nha_mo: "Ai xem được tường nhà của bạn",
+  cd_danh_ba: "Danh bạ", cd_danh_ba_mo: "Tìm bạn bằng số điện thoại, cách sắp xếp",
+  cd_tien_ich: "Tiện ích", cd_tien_ich_mo: "Mã QR trong ảnh, thẻ ngân hàng, cách mở link",
+  cd_giao_dien: "Giao diện và ngôn ngữ", cd_giao_dien_mo: "Sáng / tối, ngôn ngữ hiển thị",
+  cd_thong_tin: "Thông tin về Hialo", cd_thong_tin_mo: "Phiên bản và giới thiệu ứng dụng",
+  cd_ho_tro: "Liên hệ hỗ trợ", cd_ho_tro_mo: "Email hỗ trợ và câu hỏi thường gặp",
+  cd_chuyen_tk: "Chuyển tài khoản", cd_chuyen_tk_mo: "Đăng nhập bằng số điện thoại khác",
+  cd_xoa_tk: "Xóa tài khoản", cd_xoa_tk_mo: "Xóa vĩnh viễn tài khoản và dữ liệu của bạn",
+  btn_dang_xuat: "Đăng xuất",
+  cdtn_enter: "Nhấn Enter để gửi tin", cdtn_hien_gio: "Hiện giờ dưới mỗi tin nhắn",
+  cdti_qr_anh: "Tự nhận diện mã QR trong ảnh", cdti_qr_the: "Hiện thẻ QR khi tin nhắn nhắc tài khoản ngân hàng",
+  cdgoi_la: "Cho phép người lạ gọi", cdgoi_rung: "Rung khi có cuộc gọi đến",
+  cdtn_tuong: "Chỉ bạn bè xem được tường nhà của tôi", cdtn_tb_tuong: "Thông báo khi có tương tác trên tường",
+  gd_giao_dien: "Giao diện", gd_sang: "☀️ Sáng", gd_toi: "🌙 Tối", gd_ngon_ngu: "Ngôn ngữ / Language",
+  gd_ngon_ngu_mo: "Đổi ngôn ngữ là áp dụng ngay, không cần tải lại trang. Lựa chọn được lưu theo tài khoản và đồng bộ sang mọi thiết bị bạn đăng nhập; ngôn ngữ này cũng là ngôn ngữ đích mặc định của nút Dịch trong trò chuyện.",
+  rt_hien_thi: "Cho phép người khác tìm thấy tôi quanh đây",
+  rt_tim_sdt: "Cho phép tìm tôi bằng số điện thoại",
+  rt_la_tin: "Cho phép người lạ nhắn tin", rt_chi_ban_be: "Chỉ nhận tin từ bạn bè",
+  rt_da_xem: "Hiện trạng thái \"Đã xem\" trong trò chuyện",
+  rt_ds_chan: "🚫 Danh sách chặn", rt_chua_chan: "Bạn chưa chặn ai.", rt_quyen: "🧩 Quyền của tiện ích và ứng dụng",
+  cddb_sap_xep: "Sắp xếp danh sách bạn bè", cddb_mac_dinh: "Mặc định (thứ tự kết bạn)", cddb_theo_ten: "Theo tên A → Z",
+  tk_sdt_nhan: "Số điện thoại:", btn_sua_ho_so: "✏️ Sửa hồ sơ (tên hiển thị, ảnh đại diện)",
+  tk_pin_tieu_de: "🔑 Khóa ứng dụng bằng PIN",
+  nhan_pin_moi: "PIN mới", nhan_pin_moi2: "Nhập lại PIN mới", btn_bat_pin: "🔒 Bật khóa PIN",
+  nhan_pin_cu: "PIN hiện tại", nhan_pin_doi: "PIN mới (chỉ khi muốn đổi)", btn_doi_pin: "Đổi PIN", btn_tat_pin: "Tắt khóa PIN",
+  tk_phien_tieu_de: "🖥️ Phiên đăng nhập", tk_xacthuc_tieu_de: "🛡️ Xác thực hồ sơ", btn_gui_xacthuc: "📸 Gửi ảnh selfie xác thực",
+  tk_btn_xoa: "🗑 Xóa tài khoản",
+  tk_lien_ket_tieu_de: "🔗 Tài khoản liên kết",
+  tk_lien_ket_mo: "Liên kết Google / Facebook để đăng nhập nhanh bằng cùng một tài khoản. Một tài khoản mạng xã hội chỉ liên kết được với một tài khoản HIALO.",
+  tk_can_sdt: "Tài khoản này đăng nhập bằng mạng xã hội và chưa có số điện thoại — hãy bổ sung số điện thoại ở phần Hồ sơ nếu bạn muốn dùng các tính năng cần số điện thoại (như xác thực MO-SMS).",
+  lk_chua: "Chưa liên kết", lk_da: "Đã liên kết", lk_khong_bat: "Chưa bật trên máy chủ", btn_lien_ket: "Liên kết", btn_huy_lien_ket: "Hủy liên kết",
+  xac_nhan_huy_lk: "Hủy liên kết nhà cung cấp này khỏi tài khoản của bạn?",
+  dang_nhap_xa_hoi: "Tài khoản mạng xã hội",
+  kp_khoanh_khac: "📸 Khoảnh khắc", kp_kk_24h: "(tự biến mất sau 24 giờ)",
+  btn_chon_anh: "🖼 Chọn ảnh", btn_bo_anh: "✕ Bỏ ảnh", kk_ph: "Viết đôi dòng cho khoảnh khắc này…",
+  btn_dang_kk: "📸 Đăng khoảnh khắc", kp_thong_bao: "🔔 Thông báo",
+  kp_tim: "🔎 Tìm quanh đây", btn_dinh_vi: "📍 Bật định vị & Tìm quanh đây",
+  loc_gioi_tinh: "Tìm giới tính", loc_tat_ca: "Tất cả", loc_tuoi_tu: "Tuổi từ", loc_den: "đến",
+  loc_km_tu: "Cách từ (km)", loc_den_km: "đến (km)",
+  kp_ho_chieu: "🧳 Hộ chiếu — tìm ở vị trí khác", btn_ho_chieu: "🧳 Dùng vị trí hộ chiếu",
+  btn_tim: "🔎 Tìm", kp_ket_qua: "💞 Kết quả quanh bạn", btn_luoi: "🔲 Dạng lưới", btn_thich: "❤️ Thích",
+  kp_ghep_doi: "💞 Ghép đôi", btn_boost: "🚀 Boost hồ sơ 30 phút",
+  kp_diem_danh: "🎁 Điểm danh & quà tặng", btn_diem_danh: "✅ Điểm danh hôm nay (+10 điểm)",
+  kp_phong_thoai: "🎙️ Phòng thoại quanh bạn", btn_tao_phong_mo: "➕ Tạo phòng thoại",
+  nhan_ten_phong: "Tên phòng", nhan_chu_de: "Chủ đề", btn_tao_phong: "🎙️ Tạo & vào phòng",
+  kp_tien_ich: "🧭 Tiện ích",
+  db_tim_sdt_tieu_de: "🔍 Tìm bạn bằng số điện thoại", nhan_tim_sdt: "Số điện thoại người bạn muốn tìm",
+  db_loi_moi: "📩 Lời mời kết bạn", db_nguoi_quen: "📇 Người quen trong danh bạ máy",
+  btn_quen_danh_ba: "📇 Xem người quen từ danh bạ máy", db_ban_be: "👥 Bạn bè",
+  tn_tieu_de: "💬 Tin nhắn", quet_qr: "Quét mã QR", them_moi: "Thêm mới",
+  tn_tao_nhom: "👥 Tạo nhóm", tn_them_ban: "➕ Thêm bạn", tn_quet_qr: "🔳 Quét mã QR", tn_ma_qr: "🪪 Mã QR của tôi",
+  tn_cho: "📥 Tin nhắn chờ", tn_cho_trong: "Không có tin nhắn chờ nào.",
+  goi_thoai: "Gọi thoại", goi_video: "Gọi video", bao_cao_nguoi_nay: "Báo cáo người này", btn_chan: "🚫 Chặn",
+  gui_anh: "Gửi ảnh", gui_tep: "Gửi tệp hoặc video (tối đa 200 MB)", ghi_am: "Ghi âm tin nhắn thoại",
+  tang_qua: "Tặng quà bằng điểm thưởng", gui_sticker: "Gửi sticker",
+  tuhuy_tat: "⏳ Tự huỷ: Tắt", tuhuy_10s: "💨 10 giây", tuhuy_1p: "💨 1 phút", tuhuy_1h: "💨 1 giờ",
+  inp_tin_ph: "Nhập tin nhắn…", inp_tin_nhom_ph: "Nhắn tin tới nhóm…", btn_gui: "Gửi ➤", btn_gui_am: "Gửi 🎤",
+  dich: "🌐 Dịch", dang_dich: "Đang dịch…", da_xem: "✓✓ Đã xem", dang_nhap_lbl: "đang nhập…",
+  ban_dich: "🌐 Bản dịch",
+  tuong_tieu_de: "🏠 Tường nhà", tuong_dang_moi: "Đăng bài mới", tuong_ph: "Bạn đang nghĩ gì? (tối đa 500 ký tự)",
+  btn_dang_bai: "📝 Đăng bài",
+  quet_qr_tieu_de: "🔳 Quét mã QR", btn_dong: "✕ Đóng",
+  da_doi_ngon_ngu: "Đã đổi ngôn ngữ hiển thị.",
+  loi_xa_hoi: "Chưa đăng nhập được bằng mạng xã hội — thử lại sau nhé."
+},
+en: {
+  phu_de: "Find people near you — by gender, age and distance",
+  tim_kiem_ph: "Search HIALO: sign-in, policies, support…",
+  tab_tinnhan: "Messages", tab_danhba: "Contacts", tab_khampha: "Explore", tab_tuongnha: "Wall", tab_canhan: "Profile",
+  ho_so_tieu_de: "👤 My account & profile",
+  nhan_sdt: "Your phone number",
+  sdt_ph: "E.g.: 0912 345 678",
+  mo_ta_sdt: "Register / sign in with your phone number. Only <strong>Vietnamese mobile numbers</strong> are accepted (10 digits, starting 03 / 05 / 07 / 08 / 09) — no landlines, foreign numbers or 1900 / 1800 hotlines.",
+  btn_nhan_otp: "📩 Get OTP code",
+  nhan_otp: "OTP code", btn_xac_nhan: "✅ Confirm", btn_gui_lai: "Resend code", btn_doi_so: "← Change phone number",
+  hoac_tiep_tuc: "— or continue with —", btn_dn_facebook: "Continue with Facebook",
+  nhan_nick: "Nickname (display name)", nhan_gioi: "Gender", gioi_nam: "🧑 Male", gioi_nu: "👩 Female",
+  nhan_tuoi: "Age", nhan_emoji: "Pick 1 emoji as your avatar",
+  nhan_muc_dich: "Purpose", chua_chon: "— Not selected —", tat_ca_muc_dich: "All purposes",
+  md_ket_ban: "🤝 Make friends", md_hen_ho: "💘 Dating", md_tro_chuyen: "💬 Chat", md_nguoi_yeu: "💍 Find a partner",
+  nhan_so_thich: "Interests (comma separated, max 10)", btn_luu_ho_so: "💾 Save profile",
+  cai_dat: "Settings", trang_thai_ph: "Your status (max 60 characters)", btn_luu: "💾 Save", btn_huy: "Cancel",
+  hub_hcloud_mo: "Your cloud data storage", hub_hstyle_mo: "Wallpapers and music for Hialo calls",
+  hub_tai_lieu: "My documents", hub_tai_lieu_mo: "Important messages and files you saved",
+  hub_du_lieu: "Storage data", hub_du_lieu_mo: "Size of files you have sent",
+  hub_viqr: "QR wallet", hub_viqr_mo: "Your bank and e-wallet QR codes",
+  hub_taikhoan: "Account & security", hub_taikhoan_mo: "Profile, PIN lock, sign-in sessions",
+  hub_riengtu: "Privacy", hub_riengtu_mo: "Who can find, message and call you",
+  cd_tieu_de: "Settings",
+  cd_tin_nhan: "Messages", cd_tin_nhan_mo: "How messages are sent and shown",
+  cd_cuoc_goi: "Calls", cd_cuoc_goi_mo: "Who can call you, vibrate on incoming calls",
+  cd_tuong_nha: "Wall", cd_tuong_nha_mo: "Who can see your wall",
+  cd_danh_ba: "Contacts", cd_danh_ba_mo: "Find friends by phone number, sorting",
+  cd_tien_ich: "Utilities", cd_tien_ich_mo: "QR codes in photos, bank cards, how links open",
+  cd_giao_dien: "Appearance & language", cd_giao_dien_mo: "Light / dark, display language",
+  cd_thong_tin: "About Hialo", cd_thong_tin_mo: "App version and introduction",
+  cd_ho_tro: "Contact support", cd_ho_tro_mo: "Support email and FAQs",
+  cd_chuyen_tk: "Switch account", cd_chuyen_tk_mo: "Sign in with a different phone number",
+  cd_xoa_tk: "Delete account", cd_xoa_tk_mo: "Permanently delete your account and data",
+  btn_dang_xuat: "Log out",
+  cdtn_enter: "Press Enter to send", cdtn_hien_gio: "Show time under each message",
+  cdti_qr_anh: "Auto-detect QR codes in photos", cdti_qr_the: "Show a QR card when a message mentions a bank account",
+  cdgoi_la: "Allow calls from strangers", cdgoi_rung: "Vibrate on incoming calls",
+  cdtn_tuong: "Only friends can see my wall", cdtn_tb_tuong: "Notify me about wall interactions",
+  gd_giao_dien: "Appearance", gd_sang: "☀️ Light", gd_toi: "🌙 Dark", gd_ngon_ngu: "Language / Ngôn ngữ",
+  gd_ngon_ngu_mo: "Changing the language applies instantly, with no reload. Your choice is saved to your account and synced to every device you sign in on; it is also the default target language of the Translate button in chats.",
+  rt_hien_thi: "Let others find me nearby",
+  rt_tim_sdt: "Let others find me by phone number",
+  rt_la_tin: "Allow messages from strangers", rt_chi_ban_be: "Only receive messages from friends",
+  rt_da_xem: "Show \"Seen\" status in chats",
+  rt_ds_chan: "🚫 Blocked list", rt_chua_chan: "You have not blocked anyone.", rt_quyen: "🧩 Utility & app permissions",
+  cddb_sap_xep: "Sort friend list", cddb_mac_dinh: "Default (friend order)", cddb_theo_ten: "By name A → Z",
+  tk_sdt_nhan: "Phone number:", btn_sua_ho_so: "✏️ Edit profile (display name, avatar)",
+  tk_pin_tieu_de: "🔑 App lock with PIN",
+  nhan_pin_moi: "New PIN", nhan_pin_moi2: "Re-enter new PIN", btn_bat_pin: "🔒 Turn on PIN lock",
+  nhan_pin_cu: "Current PIN", nhan_pin_doi: "New PIN (only if changing)", btn_doi_pin: "Change PIN", btn_tat_pin: "Turn off PIN lock",
+  tk_phien_tieu_de: "🖥️ Sign-in sessions", tk_xacthuc_tieu_de: "🛡️ Profile verification", btn_gui_xacthuc: "📸 Send a verification selfie",
+  tk_btn_xoa: "🗑 Delete account",
+  tk_lien_ket_tieu_de: "🔗 Linked accounts",
+  tk_lien_ket_mo: "Link Google / Facebook for quick sign-in with the same account. One social account can only be linked to one HIALO account.",
+  tk_can_sdt: "This account signed in with a social account and has no phone number yet — add your phone number in Profile if you want features that need one (such as MO-SMS verification).",
+  lk_chua: "Not linked", lk_da: "Linked", lk_khong_bat: "Not enabled on the server", btn_lien_ket: "Link", btn_huy_lien_ket: "Unlink",
+  xac_nhan_huy_lk: "Unlink this provider from your account?",
+  dang_nhap_xa_hoi: "Social account",
+  kp_khoanh_khac: "📸 Moments", kp_kk_24h: "(disappear after 24 hours)",
+  btn_chon_anh: "🖼 Choose photo", btn_bo_anh: "✕ Remove photo", kk_ph: "Write a few words for this moment…",
+  btn_dang_kk: "📸 Post moment", kp_thong_bao: "🔔 Notifications",
+  kp_tim: "🔎 Find nearby", btn_dinh_vi: "📍 Turn on location & Find nearby",
+  loc_gioi_tinh: "Looking for", loc_tat_ca: "Everyone", loc_tuoi_tu: "Age from", loc_den: "to",
+  loc_km_tu: "From (km)", loc_den_km: "to (km)",
+  kp_ho_chieu: "🧳 Passport — search at another place", btn_ho_chieu: "🧳 Use passport location",
+  btn_tim: "🔎 Search", kp_ket_qua: "💞 People near you", btn_luoi: "🔲 Grid view", btn_thich: "❤️ Like",
+  kp_ghep_doi: "💞 Match", btn_boost: "🚀 Boost profile for 30 minutes",
+  kp_diem_danh: "🎁 Check-in & gifts", btn_diem_danh: "✅ Check in today (+10 points)",
+  kp_phong_thoai: "🎙️ Voice rooms near you", btn_tao_phong_mo: "➕ Create a voice room",
+  nhan_ten_phong: "Room name", nhan_chu_de: "Topic", btn_tao_phong: "🎙️ Create & join room",
+  kp_tien_ich: "🧭 Utilities",
+  db_tim_sdt_tieu_de: "🔍 Find friends by phone number", nhan_tim_sdt: "Phone number of the friend you want to find",
+  db_loi_moi: "📩 Friend requests", db_nguoi_quen: "📇 People in your phone contacts",
+  btn_quen_danh_ba: "📇 See people from phone contacts", db_ban_be: "👥 Friends",
+  tn_tieu_de: "💬 Messages", quet_qr: "Scan QR code", them_moi: "Add new",
+  tn_tao_nhom: "👥 Create group", tn_them_ban: "➕ Add friend", tn_quet_qr: "🔳 Scan QR code", tn_ma_qr: "🪪 My QR code",
+  tn_cho: "📥 Message requests", tn_cho_trong: "No message requests.",
+  goi_thoai: "Voice call", goi_video: "Video call", bao_cao_nguoi_nay: "Report this person", btn_chan: "🚫 Block",
+  gui_anh: "Send photo", gui_tep: "Send file or video (max 200 MB)", ghi_am: "Record a voice message",
+  tang_qua: "Send a gift with reward points", gui_sticker: "Send sticker",
+  tuhuy_tat: "⏳ Self-destruct: Off", tuhuy_10s: "💨 10 seconds", tuhuy_1p: "💨 1 minute", tuhuy_1h: "💨 1 hour",
+  inp_tin_ph: "Type a message…", inp_tin_nhom_ph: "Message the group…", btn_gui: "Send ➤", btn_gui_am: "Send 🎤",
+  dich: "🌐 Translate", dang_dich: "Translating…", da_xem: "✓✓ Seen", dang_nhap_lbl: "is typing…",
+  ban_dich: "🌐 Translation",
+  tuong_tieu_de: "🏠 Wall", tuong_dang_moi: "New post", tuong_ph: "What's on your mind? (max 500 characters)",
+  btn_dang_bai: "📝 Post",
+  quet_qr_tieu_de: "🔳 Scan QR code", btn_dong: "✕ Close",
+  da_doi_ngon_ngu: "Display language changed.",
+  loi_xa_hoi: "Could not sign in with the social account — please try again later."
+},
+tl: {
+  phu_de: "Maghanap ng mga taong malapit sa iyo — ayon sa kasarian, edad at distansya",
+  tim_kiem_ph: "Maghanap sa HIALO: pag-sign in, mga patakaran, suporta…",
+  tab_tinnhan: "Mga Mensahe", tab_danhba: "Mga Contact", tab_khampha: "Tuklasin", tab_tuongnha: "Wall", tab_canhan: "Profile",
+  ho_so_tieu_de: "👤 Ang aking account at profile",
+  nhan_sdt: "Ang iyong numero ng telepono",
+  sdt_ph: "Hal.: 0912 345 678",
+  mo_ta_sdt: "Magrehistro / mag-sign in gamit ang numero ng telepono. <strong>Mga mobile number ng Vietnam</strong> lang ang tinatanggap (10 numero, nagsisimula sa 03 / 05 / 07 / 08 / 09) — hindi tinatanggap ang landline, banyagang numero o hotline na 1900 / 1800.",
+  btn_nhan_otp: "📩 Kumuha ng OTP code",
+  nhan_otp: "OTP code", btn_xac_nhan: "✅ Kumpirmahin", btn_gui_lai: "Ipadala ulit ang code", btn_doi_so: "← Palitan ang numero",
+  hoac_tiep_tuc: "— o magpatuloy gamit ang —", btn_dn_facebook: "Magpatuloy gamit ang Facebook",
+  nhan_nick: "Nickname (display name)", nhan_gioi: "Kasarian", gioi_nam: "🧑 Lalaki", gioi_nu: "👩 Babae",
+  nhan_tuoi: "Edad", nhan_emoji: "Pumili ng 1 emoji bilang avatar",
+  nhan_muc_dich: "Layunin", chua_chon: "— Wala pang napili —", tat_ca_muc_dich: "Lahat ng layunin",
+  md_ket_ban: "🤝 Makipagkaibigan", md_hen_ho: "💘 Pakikipag-date", md_tro_chuyen: "💬 Makipag-chat", md_nguoi_yeu: "💍 Maghanap ng karelasyon",
+  nhan_so_thich: "Mga interes (paghiwalayin ng kuwit, max 10)", btn_luu_ho_so: "💾 I-save ang profile",
+  cai_dat: "Mga Setting", trang_thai_ph: "Ang iyong status (max 60 karakter)", btn_luu: "💾 I-save", btn_huy: "Kanselahin",
+  hub_hcloud_mo: "Ang iyong cloud data storage", hub_hstyle_mo: "Mga wallpaper at musika para sa mga tawag sa Hialo",
+  hub_tai_lieu: "Aking mga dokumento", hub_tai_lieu_mo: "Mahahalagang mensahe at file na na-save mo",
+  hub_du_lieu: "Data ng storage", hub_du_lieu_mo: "Laki ng mga file na naipadala mo",
+  hub_viqr: "QR wallet", hub_viqr_mo: "Mga QR code ng bangko at e-wallet mo",
+  hub_taikhoan: "Account at seguridad", hub_taikhoan_mo: "Profile, PIN lock, mga session ng pag-sign in",
+  hub_riengtu: "Privacy", hub_riengtu_mo: "Sino ang makakahanap, makaka-mensahe at makakatawag sa iyo",
+  cd_tieu_de: "Mga Setting",
+  cd_tin_nhan: "Mga Mensahe", cd_tin_nhan_mo: "Paano ipinapadala at ipinapakita ang mga mensahe",
+  cd_cuoc_goi: "Mga Tawag", cd_cuoc_goi_mo: "Sino ang makakatawag sa iyo, vibrate sa tawag",
+  cd_tuong_nha: "Wall", cd_tuong_nha_mo: "Sino ang makakakita sa wall mo",
+  cd_danh_ba: "Mga Contact", cd_danh_ba_mo: "Maghanap ng kaibigan gamit ang numero, pag-sort",
+  cd_tien_ich: "Mga Utility", cd_tien_ich_mo: "QR code sa mga larawan, bank card, paano bumubukas ang link",
+  cd_giao_dien: "Hitsura at wika", cd_giao_dien_mo: "Maliwanag / madilim, wika ng display",
+  cd_thong_tin: "Tungkol sa Hialo", cd_thong_tin_mo: "Bersyon ng app at pagpapakilala",
+  cd_ho_tro: "Makipag-ugnayan sa suporta", cd_ho_tro_mo: "Email ng suporta at mga FAQ",
+  cd_chuyen_tk: "Magpalit ng account", cd_chuyen_tk_mo: "Mag-sign in gamit ang ibang numero",
+  cd_xoa_tk: "Burahin ang account", cd_xoa_tk_mo: "Permanenteng burahin ang account at data mo",
+  btn_dang_xuat: "Mag-log out",
+  cdtn_enter: "Pindutin ang Enter para magpadala", cdtn_hien_gio: "Ipakita ang oras sa ilalim ng bawat mensahe",
+  cdti_qr_anh: "Awtomatikong kilalanin ang QR code sa mga larawan", cdti_qr_the: "Magpakita ng QR card kapag may binanggit na bank account ang mensahe",
+  cdgoi_la: "Payagan ang tawag mula sa hindi kakilala", cdgoi_rung: "Mag-vibrate kapag may papasok na tawag",
+  cdtn_tuong: "Mga kaibigan lang ang makakakita sa wall ko", cdtn_tb_tuong: "Abisuhan ako tungkol sa mga interaksyon sa wall",
+  gd_giao_dien: "Hitsura", gd_sang: "☀️ Maliwanag", gd_toi: "🌙 Madilim", gd_ngon_ngu: "Wika / Language",
+  gd_ngon_ngu_mo: "Agad naa-apply ang pagpapalit ng wika, hindi kailangang i-reload. Naka-save ang pinili mo sa account mo at naka-sync sa lahat ng device na pinag-sign-in-an mo; ito rin ang default na target na wika ng Translate button sa mga chat.",
+  rt_hien_thi: "Payagan ang iba na makita ako sa malapit",
+  rt_tim_sdt: "Payagan ang iba na makita ako gamit ang numero ng telepono",
+  rt_la_tin: "Payagan ang mensahe mula sa hindi kakilala", rt_chi_ban_be: "Tumatanggap lang ng mensahe mula sa mga kaibigan",
+  rt_da_xem: "Ipakita ang status na \"Nakita na\" sa mga chat",
+  rt_ds_chan: "🚫 Listahan ng naka-block", rt_chua_chan: "Wala ka pang naba-block.", rt_quyen: "🧩 Mga pahintulot ng utility at app",
+  cddb_sap_xep: "Ayusin ang listahan ng kaibigan", cddb_mac_dinh: "Default (ay ayon sa pagkakaibigan)", cddb_theo_ten: "Ayon sa pangalan A → Z",
+  tk_sdt_nhan: "Numero ng telepono:", btn_sua_ho_so: "✏️ I-edit ang profile (display name, avatar)",
+  tk_pin_tieu_de: "🔑 I-lock ang app gamit ang PIN",
+  nhan_pin_moi: "Bagong PIN", nhan_pin_moi2: "I-type ulit ang bagong PIN", btn_bat_pin: "🔒 I-on ang PIN lock",
+  nhan_pin_cu: "Kasalukuyang PIN", nhan_pin_doi: "Bagong PIN (kung papalitan lang)", btn_doi_pin: "Palitan ang PIN", btn_tat_pin: "I-off ang PIN lock",
+  tk_phien_tieu_de: "🖥️ Mga session ng pag-sign in", tk_xacthuc_tieu_de: "🛡️ Pag-verify ng profile", btn_gui_xacthuc: "📸 Magpadala ng selfie para sa verification",
+  tk_btn_xoa: "🗑 Burahin ang account",
+  tk_lien_ket_tieu_de: "🔗 Mga naka-link na account",
+  tk_lien_ket_mo: "I-link ang Google / Facebook para mabilis na makapag-sign in gamit ang parehong account. Isang social account lang ang puwedeng i-link sa isang HIALO account.",
+  tk_can_sdt: "Naka-sign in ang account na ito gamit ang social account at wala pang numero ng telepono — idagdag ang numero mo sa Profile kung gusto mong gumamit ng mga feature na nangangailangan nito (tulad ng MO-SMS verification).",
+  lk_chua: "Hindi pa naka-link", lk_da: "Naka-link na", lk_khong_bat: "Hindi pa naka-on sa server", btn_lien_ket: "I-link", btn_huy_lien_ket: "I-unlink",
+  xac_nhan_huy_lk: "I-unlink ang provider na ito sa account mo?",
+  dang_nhap_xa_hoi: "Social account",
+  kp_khoanh_khac: "📸 Mga Moment", kp_kk_24h: "(nawawala pagkalipas ng 24 oras)",
+  btn_chon_anh: "🖼 Pumili ng larawan", btn_bo_anh: "✕ Alisin ang larawan", kk_ph: "Magsulat ng ilang salita para sa moment na ito…",
+  btn_dang_kk: "📸 I-post ang moment", kp_thong_bao: "🔔 Mga Abiso",
+  kp_tim: "🔎 Maghanap sa malapit", btn_dinh_vi: "📍 I-on ang lokasyon at Maghanap sa malapit",
+  loc_gioi_tinh: "Hinahanap", loc_tat_ca: "Lahat", loc_tuoi_tu: "Edad mula", loc_den: "hanggang",
+  loc_km_tu: "Mula (km)", loc_den_km: "hanggang (km)",
+  kp_ho_chieu: "🧳 Passport — maghanap sa ibang lugar", btn_ho_chieu: "🧳 Gamitin ang lokasyon ng passport",
+  btn_tim: "🔎 Maghanap", kp_ket_qua: "💞 Mga tao sa paligid mo", btn_luoi: "🔲 Grid view", btn_thich: "❤️ I-like",
+  kp_ghep_doi: "💞 Match", btn_boost: "🚀 I-boost ang profile sa loob ng 30 minuto",
+  kp_diem_danh: "🎁 Check-in at mga regalo", btn_diem_danh: "✅ Mag-check in ngayon (+10 puntos)",
+  kp_phong_thoai: "🎙️ Mga voice room sa paligid mo", btn_tao_phong_mo: "➕ Gumawa ng voice room",
+  nhan_ten_phong: "Pangalan ng room", nhan_chu_de: "Paksa", btn_tao_phong: "🎙️ Gumawa at sumali sa room",
+  kp_tien_ich: "🧭 Mga Utility",
+  db_tim_sdt_tieu_de: "🔍 Maghanap ng kaibigan gamit ang numero", nhan_tim_sdt: "Numero ng teleponong ng kaibigang hinahanap mo",
+  db_loi_moi: "📩 Mga friend request", db_nguoi_quen: "📇 Mga tao sa contacts ng telepono mo",
+  btn_quen_danh_ba: "📇 Tingnan ang mga tao mula sa contacts", db_ban_be: "👥 Mga Kaibigan",
+  tn_tieu_de: "💬 Mga Mensahe", quet_qr: "Mag-scan ng QR code", them_moi: "Magdagdag",
+  tn_tao_nhom: "👥 Gumawa ng grupo", tn_them_ban: "➕ Magdagdag ng kaibigan", tn_quet_qr: "🔳 Mag-scan ng QR code", tn_ma_qr: "🪪 QR code ko",
+  tn_cho: "📥 Mga message request", tn_cho_trong: "Walang message request.",
+  goi_thoai: "Voice call", goi_video: "Video call", bao_cao_nguoi_nay: "I-report ang taong ito", btn_chan: "🚫 I-block",
+  gui_anh: "Magpadala ng larawan", gui_tep: "Magpadala ng file o video (max 200 MB)", ghi_am: "Mag-record ng voice message",
+  tang_qua: "Magpadala ng regalo gamit ang reward points", gui_sticker: "Magpadala ng sticker",
+  tuhuy_tat: "⏳ Self-destruct: Naka-off", tuhuy_10s: "💨 10 segundo", tuhuy_1p: "💨 1 minuto", tuhuy_1h: "💨 1 oras",
+  inp_tin_ph: "Mag-type ng mensahe…", inp_tin_nhom_ph: "Mag-mensahe sa grupo…", btn_gui: "Ipadala ➤", btn_gui_am: "Ipadala 🎤",
+  dich: "🌐 Isalin", dang_dich: "Isinasalin…", da_xem: "✓✓ Nakita na", dang_nhap_lbl: "ay nagta-type…",
+  ban_dich: "🌐 Salin",
+  tuong_tieu_de: "🏠 Wall", tuong_dang_moi: "Bagong post", tuong_ph: "Ano ang nasa isip mo? (max 500 karakter)",
+  btn_dang_bai: "📝 I-post",
+  quet_qr_tieu_de: "🔳 Mag-scan ng QR code", btn_dong: "✕ Isara",
+  da_doi_ngon_ngu: "Napalitan na ang wika ng display.",
+  loi_xa_hoi: "Hindi nakapag-sign in gamit ang social account — subukan ulit mamaya."
+},
+id: {
+  phu_de: "Temukan orang di dekat Anda — berdasarkan jenis kelamin, usia, dan jarak",
+  tim_kiem_ph: "Cari di HIALO: masuk, kebijakan, dukungan…",
+  tab_tinnhan: "Pesan", tab_danhba: "Kontak", tab_khampha: "Jelajahi", tab_tuongnha: "Dinding", tab_canhan: "Profil",
+  ho_so_tieu_de: "👤 Akun & profil saya",
+  nhan_sdt: "Nomor telepon Anda",
+  sdt_ph: "Contoh: 0912 345 678",
+  mo_ta_sdt: "Daftar / masuk dengan nomor telepon. Hanya <strong>nomor ponsel Vietnam</strong> yang diterima (10 digit, awalan 03 / 05 / 07 / 08 / 09) — bukan nomor rumah, nomor luar negeri, atau hotline 1900 / 1800.",
+  btn_nhan_otp: "📩 Minta kode OTP",
+  nhan_otp: "Kode OTP", btn_xac_nhan: "✅ Konfirmasi", btn_gui_lai: "Kirim ulang kode", btn_doi_so: "← Ganti nomor telepon",
+  hoac_tiep_tuc: "— atau lanjutkan dengan —", btn_dn_facebook: "Lanjutkan dengan Facebook",
+  nhan_nick: "Nama panggilan (nama tampilan)", nhan_gioi: "Jenis kelamin", gioi_nam: "🧑 Pria", gioi_nu: "👩 Wanita",
+  nhan_tuoi: "Usia", nhan_emoji: "Pilih 1 emoji sebagai avatar",
+  nhan_muc_dich: "Tujuan", chua_chon: "— Belum dipilih —", tat_ca_muc_dich: "Semua tujuan",
+  md_ket_ban: "🤝 Berteman", md_hen_ho: "💘 Kencan", md_tro_chuyen: "💬 Mengobrol", md_nguoi_yeu: "💍 Cari pasangan",
+  nhan_so_thich: "Minat (pisahkan dengan koma, maks 10)", btn_luu_ho_so: "💾 Simpan profil",
+  cai_dat: "Pengaturan", trang_thai_ph: "Status Anda (maks 60 karakter)", btn_luu: "💾 Simpan", btn_huy: "Batal",
+  hub_hcloud_mo: "Penyimpanan data cloud Anda", hub_hstyle_mo: "Wallpaper dan musik untuk panggilan Hialo",
+  hub_tai_lieu: "Dokumen saya", hub_tai_lieu_mo: "Pesan dan file penting yang Anda simpan",
+  hub_du_lieu: "Data penyimpanan", hub_du_lieu_mo: "Ukuran file yang telah Anda kirim",
+  hub_viqr: "Dompet QR", hub_viqr_mo: "Kode QR bank dan e-wallet Anda",
+  hub_taikhoan: "Akun & keamanan", hub_taikhoan_mo: "Profil, kunci PIN, sesi masuk",
+  hub_riengtu: "Privasi", hub_riengtu_mo: "Siapa yang dapat menemukan, mengirim pesan, dan menelepon Anda",
+  cd_tieu_de: "Pengaturan",
+  cd_tin_nhan: "Pesan", cd_tin_nhan_mo: "Cara pesan dikirim dan ditampilkan",
+  cd_cuoc_goi: "Panggilan", cd_cuoc_goi_mo: "Siapa yang dapat menelepon Anda, getar saat panggilan masuk",
+  cd_tuong_nha: "Dinding", cd_tuong_nha_mo: "Siapa yang dapat melihat dinding Anda",
+  cd_danh_ba: "Kontak", cd_danh_ba_mo: "Cari teman dengan nomor telepon, pengurutan",
+  cd_tien_ich: "Utilitas", cd_tien_ich_mo: "Kode QR dalam foto, kartu bank, cara tautan dibuka",
+  cd_giao_dien: "Tampilan & bahasa", cd_giao_dien_mo: "Terang / gelap, bahasa tampilan",
+  cd_thong_tin: "Tentang Hialo", cd_thong_tin_mo: "Versi aplikasi dan perkenalan",
+  cd_ho_tro: "Hubungi dukungan", cd_ho_tro_mo: "Email dukungan dan FAQ",
+  cd_chuyen_tk: "Ganti akun", cd_chuyen_tk_mo: "Masuk dengan nomor telepon lain",
+  cd_xoa_tk: "Hapus akun", cd_xoa_tk_mo: "Hapus akun dan data Anda secara permanen",
+  btn_dang_xuat: "Keluar",
+  cdtn_enter: "Tekan Enter untuk mengirim", cdtn_hien_gio: "Tampilkan waktu di bawah setiap pesan",
+  cdti_qr_anh: "Deteksi otomatis kode QR dalam foto", cdti_qr_the: "Tampilkan kartu QR saat pesan menyebut rekening bank",
+  cdgoi_la: "Izinkan panggilan dari orang asing", cdgoi_rung: "Bergetar saat panggilan masuk",
+  cdtn_tuong: "Hanya teman yang dapat melihat dinding saya", cdtn_tb_tuong: "Beritahu saya tentang interaksi di dinding",
+  gd_giao_dien: "Tampilan", gd_sang: "☀️ Terang", gd_toi: "🌙 Gelap", gd_ngon_ngu: "Bahasa / Language",
+  gd_ngon_ngu_mo: "Mengganti bahasa langsung diterapkan tanpa memuat ulang. Pilihan Anda disimpan ke akun dan disinkronkan ke semua perangkat tempat Anda masuk; bahasa ini juga menjadi bahasa tujuan bawaan tombol Terjemahkan di obrolan.",
+  rt_hien_thi: "Izinkan orang lain menemukan saya di sekitar",
+  rt_tim_sdt: "Izinkan orang lain menemukan saya lewat nomor telepon",
+  rt_la_tin: "Izinkan pesan dari orang asing", rt_chi_ban_be: "Hanya terima pesan dari teman",
+  rt_da_xem: "Tampilkan status \"Dilihat\" di obrolan",
+  rt_ds_chan: "🚫 Daftar blokir", rt_chua_chan: "Anda belum memblokir siapa pun.", rt_quyen: "🧩 Izin utilitas & aplikasi",
+  cddb_sap_xep: "Urutkan daftar teman", cddb_mac_dinh: "Bawaan (urutan pertemanan)", cddb_theo_ten: "Berdasarkan nama A → Z",
+  tk_sdt_nhan: "Nomor telepon:", btn_sua_ho_so: "✏️ Edit profil (nama tampilan, avatar)",
+  tk_pin_tieu_de: "🔑 Kunci aplikasi dengan PIN",
+  nhan_pin_moi: "PIN baru", nhan_pin_moi2: "Masukkan ulang PIN baru", btn_bat_pin: "🔒 Aktifkan kunci PIN",
+  nhan_pin_cu: "PIN saat ini", nhan_pin_doi: "PIN baru (hanya jika ingin mengganti)", btn_doi_pin: "Ganti PIN", btn_tat_pin: "Matikan kunci PIN",
+  tk_phien_tieu_de: "🖥️ Sesi masuk", tk_xacthuc_tieu_de: "🛡️ Verifikasi profil", btn_gui_xacthuc: "📸 Kirim selfie verifikasi",
+  tk_btn_xoa: "🗑 Hapus akun",
+  tk_lien_ket_tieu_de: "🔗 Akun tertaut",
+  tk_lien_ket_mo: "Tautkan Google / Facebook untuk masuk cepat dengan akun yang sama. Satu akun sosial hanya dapat ditautkan ke satu akun HIALO.",
+  tk_can_sdt: "Akun ini masuk dengan akun sosial dan belum memiliki nomor telepon — tambahkan nomor Anda di Profil jika ingin memakai fitur yang memerlukannya (seperti verifikasi MO-SMS).",
+  lk_chua: "Belum tertaut", lk_da: "Sudah tertaut", lk_khong_bat: "Belum diaktifkan di server", btn_lien_ket: "Tautkan", btn_huy_lien_ket: "Lepaskan",
+  xac_nhan_huy_lk: "Lepaskan penyedia ini dari akun Anda?",
+  dang_nhap_xa_hoi: "Akun sosial",
+  kp_khoanh_khac: "📸 Momen", kp_kk_24h: "(hilang setelah 24 jam)",
+  btn_chon_anh: "🖼 Pilih foto", btn_bo_anh: "✕ Hapus foto", kk_ph: "Tulis beberapa kata untuk momen ini…",
+  btn_dang_kk: "📸 Posting momen", kp_thong_bao: "🔔 Notifikasi",
+  kp_tim: "🔎 Cari di sekitar", btn_dinh_vi: "📍 Aktifkan lokasi & Cari di sekitar",
+  loc_gioi_tinh: "Mencari", loc_tat_ca: "Semua", loc_tuoi_tu: "Usia dari", loc_den: "sampai",
+  loc_km_tu: "Dari (km)", loc_den_km: "sampai (km)",
+  kp_ho_chieu: "🧳 Paspor — cari di tempat lain", btn_ho_chieu: "🧳 Gunakan lokasi paspor",
+  btn_tim: "🔎 Cari", kp_ket_qua: "💞 Orang di sekitar Anda", btn_luoi: "🔲 Tampilan grid", btn_thich: "❤️ Suka",
+  kp_ghep_doi: "💞 Pasangan", btn_boost: "🚀 Boost profil selama 30 menit",
+  kp_diem_danh: "🎁 Check-in & hadiah", btn_diem_danh: "✅ Check-in hari ini (+10 poin)",
+  kp_phong_thoai: "🎙️ Ruang suara di sekitar Anda", btn_tao_phong_mo: "➕ Buat ruang suara",
+  nhan_ten_phong: "Nama ruang", nhan_chu_de: "Topik", btn_tao_phong: "🎙️ Buat & masuk ruang",
+  kp_tien_ich: "🧭 Utilitas",
+  db_tim_sdt_tieu_de: "🔍 Cari teman dengan nomor telepon", nhan_tim_sdt: "Nomor telepon teman yang ingin Anda cari",
+  db_loi_moi: "📩 Permintaan pertemanan", db_nguoi_quen: "📇 Orang di kontak telepon Anda",
+  btn_quen_danh_ba: "📇 Lihat orang dari kontak telepon", db_ban_be: "👥 Teman",
+  tn_tieu_de: "💬 Pesan", quet_qr: "Pindai kode QR", them_moi: "Tambah baru",
+  tn_tao_nhom: "👥 Buat grup", tn_them_ban: "➕ Tambah teman", tn_quet_qr: "🔳 Pindai kode QR", tn_ma_qr: "🪪 Kode QR saya",
+  tn_cho: "📥 Permintaan pesan", tn_cho_trong: "Tidak ada permintaan pesan.",
+  goi_thoai: "Panggilan suara", goi_video: "Panggilan video", bao_cao_nguoi_nay: "Laporkan orang ini", btn_chan: "🚫 Blokir",
+  gui_anh: "Kirim foto", gui_tep: "Kirim file atau video (maks 200 MB)", ghi_am: "Rekam pesan suara",
+  tang_qua: "Kirim hadiah dengan poin hadiah", gui_sticker: "Kirim stiker",
+  tuhuy_tat: "⏳ Hancur sendiri: Mati", tuhuy_10s: "💨 10 detik", tuhuy_1p: "💨 1 menit", tuhuy_1h: "💨 1 jam",
+  inp_tin_ph: "Ketik pesan…", inp_tin_nhom_ph: "Pesan ke grup…", btn_gui: "Kirim ➤", btn_gui_am: "Kirim 🎤",
+  dich: "🌐 Terjemahkan", dang_dich: "Menerjemahkan…", da_xem: "✓✓ Dilihat", dang_nhap_lbl: "sedang mengetik…",
+  ban_dich: "🌐 Terjemahan",
+  tuong_tieu_de: "🏠 Dinding", tuong_dang_moi: "Postingan baru", tuong_ph: "Apa yang Anda pikirkan? (maks 500 karakter)",
+  btn_dang_bai: "📝 Posting",
+  quet_qr_tieu_de: "🔳 Pindai kode QR", btn_dong: "✕ Tutup",
+  da_doi_ngon_ngu: "Bahasa tampilan telah diubah.",
+  loi_xa_hoi: "Tidak dapat masuk dengan akun sosial — coba lagi nanti."
+},
+th: {
+  phu_de: "ค้นหาผู้คนใกล้ตัวคุณ — ตามเพศ อายุ และระยะทาง",
+  tim_kiem_ph: "ค้นหาใน HIALO: การเข้าสู่ระบบ นโยบาย การสนับสนุน…",
+  tab_tinnhan: "ข้อความ", tab_danhba: "รายชื่อ", tab_khampha: "สำรวจ", tab_tuongnha: "วอลล์", tab_canhan: "โปรไฟล์",
+  ho_so_tieu_de: "👤 บัญชีและโปรไฟล์ของฉัน",
+  nhan_sdt: "หมายเลขโทรศัพท์ของคุณ",
+  sdt_ph: "ตัวอย่าง: 0912 345 678",
+  mo_ta_sdt: "ลงทะเบียน / เข้าสู่ระบบด้วยหมายเลขโทรศัพท์ รับเฉพาะ <strong>หมายเลขมือถือเวียดนาม</strong> (10 หลัก ขึ้นต้น 03 / 05 / 07 / 08 / 09) — ไม่รับเบอร์บ้าน เบอร์ต่างประเทศ หรือสายด่วน 1900 / 1800",
+  btn_nhan_otp: "📩 รับรหัส OTP",
+  nhan_otp: "รหัส OTP", btn_xac_nhan: "✅ ยืนยัน", btn_gui_lai: "ส่งรหัสอีกครั้ง", btn_doi_so: "← เปลี่ยนหมายเลขโทรศัพท์",
+  hoac_tiep_tuc: "— หรือดำเนินการต่อด้วย —", btn_dn_facebook: "ดำเนินการต่อด้วย Facebook",
+  nhan_nick: "ชื่อเล่น (ชื่อที่แสดง)", nhan_gioi: "เพศ", gioi_nam: "🧑 ชาย", gioi_nu: "👩 หญิง",
+  nhan_tuoi: "อายุ", nhan_emoji: "เลือกอิโมจิ 1 อันเป็นรูปโปรไฟล์",
+  nhan_muc_dich: "วัตถุประสงค์", chua_chon: "— ยังไม่ได้เลือก —", tat_ca_muc_dich: "ทุกวัตถุประสงค์",
+  md_ket_ban: "🤝 หาเพื่อน", md_hen_ho: "💘 ออกเดท", md_tro_chuyen: "💬 แชท", md_nguoi_yeu: "💍 หาคู่",
+  nhan_so_thich: "ความสนใจ (คั่นด้วยจุลภาค สูงสุด 10)", btn_luu_ho_so: "💾 บันทึกโปรไฟล์",
+  cai_dat: "การตั้งค่า", trang_thai_ph: "สถานะของคุณ (สูงสุด 60 ตัวอักษร)", btn_luu: "💾 บันทึก", btn_huy: "ยกเลิก",
+  hub_hcloud_mo: "พื้นที่เก็บข้อมูลบนคลาวด์ของคุณ", hub_hstyle_mo: "วอลเปเปอร์และเพลงสำหรับการโทร Hialo",
+  hub_tai_lieu: "เอกสารของฉัน", hub_tai_lieu_mo: "ข้อความและไฟล์สำคัญที่คุณบันทึกไว้",
+  hub_du_lieu: "ข้อมูลพื้นที่จัดเก็บ", hub_du_lieu_mo: "ขนาดไฟล์ที่คุณส่งไป",
+  hub_viqr: "กระเป๋า QR", hub_viqr_mo: "คิวอาร์โค้ดธนาคารและอีวอลเล็ตของคุณ",
+  hub_taikhoan: "บัญชีและความปลอดภัย", hub_taikhoan_mo: "โปรไฟล์ ล็อก PIN เซสชันการเข้าสู่ระบบ",
+  hub_riengtu: "ความเป็นส่วนตัว", hub_riengtu_mo: "ใครสามารถค้นหา ส่งข้อความ และโทรหาคุณได้",
+  cd_tieu_de: "การตั้งค่า",
+  cd_tin_nhan: "ข้อความ", cd_tin_nhan_mo: "วิธีส่งและแสดงข้อความ",
+  cd_cuoc_goi: "การโทร", cd_cuoc_goi_mo: "ใครโทรหาคุณได้ สั่นเมื่อมีสายเข้า",
+  cd_tuong_nha: "วอลล์", cd_tuong_nha_mo: "ใครเห็นวอลล์ของคุณได้",
+  cd_danh_ba: "รายชื่อ", cd_danh_ba_mo: "หาเพื่อนด้วยหมายเลขโทรศัพท์ การเรียงลำดับ",
+  cd_tien_ich: "เครื่องมือ", cd_tien_ich_mo: "คิวอาร์โค้ดในรูปภาพ บัตรธนาคาร วิธีเปิดลิงก์",
+  cd_giao_dien: "รูปลักษณ์และภาษา", cd_giao_dien_mo: "สว่าง / มืด ภาษาที่แสดง",
+  cd_thong_tin: "เกี่ยวกับ Hialo", cd_thong_tin_mo: "เวอร์ชันแอปและคำแนะนำ",
+  cd_ho_tro: "ติดต่อฝ่ายสนับสนุน", cd_ho_tro_mo: "อีเมลสนับสนุนและคำถามที่พบบ่อย",
+  cd_chuyen_tk: "สลับบัญชี", cd_chuyen_tk_mo: "เข้าสู่ระบบด้วยหมายเลขอื่น",
+  cd_xoa_tk: "ลบบัญชี", cd_xoa_tk_mo: "ลบบัญชีและข้อมูลของคุณอย่างถาวร",
+  btn_dang_xuat: "ออกจากระบบ",
+  cdtn_enter: "กด Enter เพื่อส่ง", cdtn_hien_gio: "แสดงเวลาใต้ทุกข้อความ",
+  cdti_qr_anh: "ตรวจจับคิวอาร์โค้ดในรูปภาพอัตโนมัติ", cdti_qr_the: "แสดงการ์ด QR เมื่อข้อความกล่าวถึงบัญชีธนาคาร",
+  cdgoi_la: "อนุญาตให้คนแปลกหน้าโทรหา", cdgoi_rung: "สั่นเมื่อมีสายเข้า",
+  cdtn_tuong: "เฉพาะเพื่อนเท่านั้นที่เห็นวอลล์ของฉัน", cdtn_tb_tuong: "แจ้งเตือนเมื่อมีปฏิสัมพันธ์บนวอลล์",
+  gd_giao_dien: "รูปลักษณ์", gd_sang: "☀️ สว่าง", gd_toi: "🌙 มืด", gd_ngon_ngu: "ภาษา / Language",
+  gd_ngon_ngu_mo: "การเปลี่ยนภาษามีผลทันทีโดยไม่ต้องโหลดหน้าใหม่ ตัวเลือกของคุณจะถูกบันทึกในบัญชีและซิงค์ไปยังทุกอุปกรณ์ที่คุณเข้าสู่ระบบ และยังเป็นภาษาเป้าหมายเริ่มต้นของปุ่มแปลในแชทด้วย",
+  rt_hien_thi: "ให้ผู้อื่นค้นหาฉันในบริเวณใกล้เคียง",
+  rt_tim_sdt: "ให้ผู้อื่นค้นหาฉันด้วยหมายเลขโทรศัพท์",
+  rt_la_tin: "อนุญาตข้อความจากคนแปลกหน้า", rt_chi_ban_be: "รับข้อความจากเพื่อนเท่านั้น",
+  rt_da_xem: "แสดงสถานะ \"อ่านแล้ว\" ในแชท",
+  rt_ds_chan: "🚫 รายชื่อที่บล็อก", rt_chua_chan: "คุณยังไม่ได้บล็อกใคร", rt_quyen: "🧩 สิทธิ์ของเครื่องมือและแอป",
+  cddb_sap_xep: "เรียงรายชื่อเพื่อน", cddb_mac_dinh: "ค่าเริ่มต้น (ลำดับการเป็นเพื่อน)", cddb_theo_ten: "ตามชื่อ A → Z",
+  tk_sdt_nhan: "หมายเลขโทรศัพท์:", btn_sua_ho_so: "✏️ แก้ไขโปรไฟล์ (ชื่อที่แสดง รูปโปรไฟล์)",
+  tk_pin_tieu_de: "🔑 ล็อกแอปด้วย PIN",
+  nhan_pin_moi: "PIN ใหม่", nhan_pin_moi2: "ใส่ PIN ใหม่อีกครั้ง", btn_bat_pin: "🔒 เปิดล็อก PIN",
+  nhan_pin_cu: "PIN ปัจจุบัน", nhan_pin_doi: "PIN ใหม่ (เฉพาะเมื่อต้องการเปลี่ยน)", btn_doi_pin: "เปลี่ยน PIN", btn_tat_pin: "ปิดล็อก PIN",
+  tk_phien_tieu_de: "🖥️ เซสชันการเข้าสู่ระบบ", tk_xacthuc_tieu_de: "🛡️ การยืนยันโปรไฟล์", btn_gui_xacthuc: "📸 ส่งเซลฟี่ยืนยันตัวตน",
+  tk_btn_xoa: "🗑 ลบบัญชี",
+  tk_lien_ket_tieu_de: "🔗 บัญชีที่เชื่อมโยง",
+  tk_lien_ket_mo: "เชื่อมโยง Google / Facebook เพื่อเข้าสู่ระบบอย่างรวดเร็วด้วยบัญชีเดียวกัน บัญชีโซเชียลหนึ่งบัญชีเชื่อมโยงกับบัญชี HIALO ได้เพียงบัญชีเดียว",
+  tk_can_sdt: "บัญชีนี้เข้าสู่ระบบด้วยบัญชีโซเชียลและยังไม่มีหมายเลขโทรศัพท์ — โปรดเพิ่มหมายเลขของคุณในโปรไฟล์หากต้องการใช้ฟีเจอร์ที่ต้องใช้หมายเลข (เช่น การยืนยัน MO-SMS)",
+  lk_chua: "ยังไม่ได้เชื่อมโยง", lk_da: "เชื่อมโยงแล้ว", lk_khong_bat: "ยังไม่เปิดใช้งานบนเซิร์ฟเวอร์", btn_lien_ket: "เชื่อมโยง", btn_huy_lien_ket: "ยกเลิกการเชื่อมโยง",
+  xac_nhan_huy_lk: "ยกเลิกการเชื่อมโยงผู้ให้บริการนี้จากบัญชีของคุณ?",
+  dang_nhap_xa_hoi: "บัญชีโซเชียล",
+  kp_khoanh_khac: "📸 โมเมนต์", kp_kk_24h: "(หายไปหลัง 24 ชั่วโมง)",
+  btn_chon_anh: "🖼 เลือกรูปภาพ", btn_bo_anh: "✕ ลบรูปภาพ", kk_ph: "เขียนสักสองสามคำสำหรับโมเมนต์นี้…",
+  btn_dang_kk: "📸 โพสต์โมเมนต์", kp_thong_bao: "🔔 การแจ้งเตือน",
+  kp_tim: "🔎 ค้นหาใกล้ตัว", btn_dinh_vi: "📍 เปิดตำแหน่งและค้นหาใกล้ตัว",
+  loc_gioi_tinh: "กำลังมองหา", loc_tat_ca: "ทุกคน", loc_tuoi_tu: "อายุตั้งแต่", loc_den: "ถึง",
+  loc_km_tu: "ตั้งแต่ (กม.)", loc_den_km: "ถึง (กม.)",
+  kp_ho_chieu: "🧳 พาสปอร์ต — ค้นหาที่สถานที่อื่น", btn_ho_chieu: "🧳 ใช้ตำแหน่งพาสปอร์ต",
+  btn_tim: "🔎 ค้นหา", kp_ket_qua: "💞 ผู้คนใกล้ตัวคุณ", btn_luoi: "🔲 มุมมองตาราง", btn_thich: "❤️ ถูกใจ",
+  kp_ghep_doi: "💞 จับคู่", btn_boost: "🚀 บูสต์โปรไฟล์ 30 นาที",
+  kp_diem_danh: "🎁 เช็คอินและของขวัญ", btn_diem_danh: "✅ เช็คอินวันนี้ (+10 แต้ม)",
+  kp_phong_thoai: "🎙️ ห้องเสียงใกล้ตัวคุณ", btn_tao_phong_mo: "➕ สร้างห้องเสียง",
+  nhan_ten_phong: "ชื่อห้อง", nhan_chu_de: "หัวข้อ", btn_tao_phong: "🎙️ สร้างและเข้าห้อง",
+  kp_tien_ich: "🧭 เครื่องมือ",
+  db_tim_sdt_tieu_de: "🔍 หาเพื่อนด้วยหมายเลขโทรศัพท์", nhan_tim_sdt: "หมายเลขโทรศัพท์ของเพื่อนที่คุณต้องการค้นหา",
+  db_loi_moi: "📩 คำขอเป็นเพื่อน", db_nguoi_quen: "📇 ผู้คนในรายชื่อโทรศัพท์ของคุณ",
+  btn_quen_danh_ba: "📇 ดูผู้คนจากรายชื่อโทรศัพท์", db_ban_be: "👥 เพื่อน",
+  tn_tieu_de: "💬 ข้อความ", quet_qr: "สแกนคิวอาร์โค้ด", them_moi: "เพิ่มใหม่",
+  tn_tao_nhom: "👥 สร้างกลุ่ม", tn_them_ban: "➕ เพิ่มเพื่อน", tn_quet_qr: "🔳 สแกนคิวอาร์โค้ด", tn_ma_qr: "🪪 คิวอาร์โค้ดของฉัน",
+  tn_cho: "📥 คำขอข้อความ", tn_cho_trong: "ไม่มีคำขอข้อความ",
+  goi_thoai: "โทรเสียง", goi_video: "วิดีโอคอล", bao_cao_nguoi_nay: "รายงานบุคคลนี้", btn_chan: "🚫 บล็อก",
+  gui_anh: "ส่งรูปภาพ", gui_tep: "ส่งไฟล์หรือวิดีโอ (สูงสุด 200 MB)", ghi_am: "บันทึกข้อความเสียง",
+  tang_qua: "ส่งของขวัญด้วยแต้มรางวัล", gui_sticker: "ส่งสติกเกอร์",
+  tuhuy_tat: "⏳ ทำลายตัวเอง: ปิด", tuhuy_10s: "💨 10 วินาที", tuhuy_1p: "💨 1 นาที", tuhuy_1h: "💨 1 ชั่วโมง",
+  inp_tin_ph: "พิมพ์ข้อความ…", inp_tin_nhom_ph: "ส่งข้อความถึงกลุ่ม…", btn_gui: "ส่ง ➤", btn_gui_am: "ส่ง 🎤",
+  dich: "🌐 แปล", dang_dich: "กำลังแปล…", da_xem: "✓✓ อ่านแล้ว", dang_nhap_lbl: "กำลังพิมพ์…",
+  ban_dich: "🌐 คำแปล",
+  tuong_tieu_de: "🏠 วอลล์", tuong_dang_moi: "โพสต์ใหม่", tuong_ph: "คุณกำลังคิดอะไรอยู่? (สูงสุด 500 ตัวอักษร)",
+  btn_dang_bai: "📝 โพสต์",
+  quet_qr_tieu_de: "🔳 สแกนคิวอาร์โค้ด", btn_dong: "✕ ปิด",
+  da_doi_ngon_ngu: "เปลี่ยนภาษาที่แสดงแล้ว",
+  loi_xa_hoi: "ไม่สามารถเข้าสู่ระบบด้วยบัญชีโซเชียลได้ — โปรดลองอีกครั้งภายหลัง"
+}
+};
+// Lấy chuỗi theo khóa: ngôn ngữ yêu cầu -> tiếng Anh -> tiếng Việt -> chính khóa.
+// (Hàm thuần, không đụng DOM — kiểm thử được bằng Node.)
+function trichChuoi(khoa, ngonNgu) {
+  var bang = BANG_NGON_NGU;
+  if (bang[ngonNgu] && typeof bang[ngonNgu][khoa] === "string") return bang[ngonNgu][khoa];
+  if (bang.en && typeof bang.en[khoa] === "string") return bang.en[khoa];
+  if (bang.vi && typeof bang.vi[khoa] === "string") return bang.vi[khoa];
+  return khoa;
+}
+// Suy ngôn ngữ từ mã trình duyệt (navigator.language): fil/tl -> tl, in/id -> id,
+// th -> th, en -> en, còn lại mặc định vi (khách chính của HIALO hiện tại).
+function phatHienNgonNguTuTrinhDuyet(maTrinhDuyet) {
+  var m = String(maTrinhDuyet || "").toLowerCase();
+  if (m.indexOf("fil") === 0 || m.indexOf("tl") === 0) return "tl";
+  if (m.indexOf("id") === 0 || m.indexOf("in") === 0) return "id";
+  if (m.indexOf("th") === 0) return "th";
+  if (m.indexOf("en") === 0) return "en";
+  return "vi";
+}
+
 // ===== PHẦN TRÌNH DUYỆT =====
 if (typeof document !== "undefined") {
   var me = null;               // hồ sơ của số đang đăng nhập (nếu đã tạo)
@@ -313,7 +801,7 @@ if (typeof document !== "undefined") {
     try {
       var s = localStorage.getItem(KHOA_LUU);
       // Chỉ nhận đúng dạng số di động 10 số bắt đầu bằng 0 (dữ liệu cũ dạng khác thì bỏ qua)
-      return (typeof s === "string" && /^0\d{9}$/.test(s)) ? s : null;
+      return (typeof s === "string" && (/^0\d{9}$/.test(s) || /^(gg|fb)-[0-9a-f]{16}$/.test(s))) ? s : null;
     } catch (e) { return null; }
   }
 
@@ -368,7 +856,7 @@ if (typeof document !== "undefined") {
       $("loiChao").textContent = me.nick || "Xin chào!";
       $("thongTinMe").textContent =
         (me.gioi === "nu" ? "👩 Nữ" : "🧑 Nam") + " · " + me.tuoi + " tuổi";
-      $("sdtMe").textContent = "📱 " + (sdtHienTai || "");
+      $("sdtMe").textContent = /^0\d{9}$/.test(sdtHienTai || "") ? ("📱 " + sdtHienTai) : ("🔗 " + trichChuoi("dang_nhap_xa_hoi", ngonNguHT));
       $("chkHienThi").checked = me.hienThi !== false;
       if (me.trangThai) trangThaiMe = me.trangThai; // bản đồng bộ từ máy chủ lúc đăng nhập
       capNhatBongTrangThai();
@@ -2657,7 +3145,7 @@ if (typeof document !== "undefined") {
         var nutDich = document.createElement("button");
         nutDich.type = "button";
         nutDich.className = "nutLuuTin";
-        nutDich.textContent = "🌐 Dịch";
+        nutDich.textContent = trichChuoi("dich", ngonNguHT);
         nutDich.title = "Dịch tin nhắn này";
         nutDich.addEventListener("click", function () { dichTinNhan(t, dong); });
         dong.appendChild(nutDich);
@@ -2724,7 +3212,7 @@ if (typeof document !== "undefined") {
     var dv = document.createElement("div");
     dv.id = "dongDaXemChat";
     dv.className = "dongDaXem";
-    dv.textContent = "✓✓ Đã xem " + dinhDangGio(chatDaXemDen);
+    dv.textContent = trichChuoi("da_xem", ngonNguHT) + " " + dinhDangGio(chatDaXemDen);
     dongCuoi.after(dv);
   }
 
@@ -2757,8 +3245,8 @@ if (typeof document !== "undefined") {
   function dichTinNhan(t, dong) {
     var co = dong.querySelector(".banDich");
     if (co) { co.remove(); return; }
-    hienToast("Đang dịch… 🌐");
-    goiAPI("/api/dich", "POST", { vanBan: t.noiDung }, true).then(function (kq) {
+    hienToast(trichChuoi("dang_dich", ngonNguHT) + " 🌐");
+    goiAPI("/api/dich", "POST", { vanBan: t.noiDung, dichSang: ngonNguHT }, true).then(function (kq) {
       if (!kq.ok) { hienToast(kq.loi || "Chưa dịch được lúc này."); return; }
       var dv = document.createElement("div");
       dv.className = "banDich";
@@ -2766,7 +3254,7 @@ if (typeof document !== "undefined") {
       nd.textContent = kq.dich || "";
       var nguon = document.createElement("div");
       nguon.className = "metaTep";
-      nguon.textContent = "🌐 Bản dịch (" + (kq.dichSang === "en" ? "tiếng Anh" : "tiếng Việt") + ") · " + (kq.nguon || "");
+      nguon.textContent = trichChuoi("ban_dich", ngonNguHT) + (TEN_NGON_NGU_GOC[kq.dichSang] ? (" (" + TEN_NGON_NGU_GOC[kq.dichSang] + ")") : "") + " · " + (kq.nguon || "");
       dv.appendChild(nd);
       dv.appendChild(nguon);
       dong.appendChild(dv);
@@ -2805,7 +3293,7 @@ if (typeof document !== "undefined") {
     if (!chatVoi || msg.tu !== chatVoi.sdt) return;
     var el = $("dongDangNhap");
     if (!el) return;
-    el.textContent = "✍️ " + (chatVoi.nick || "Đối phương") + " đang nhập…";
+    el.textContent = "✍️ " + (chatVoi.nick || "Đối phương") + " " + trichChuoi("dang_nhap_lbl", ngonNguHT);
     el.classList.remove("an");
     if (henAnDangNhap) clearTimeout(henAnDangNhap);
     henAnDangNhap = setTimeout(anDongDangNhap, 3500);
@@ -3051,7 +3539,7 @@ if (typeof document !== "undefined") {
         var nutDichN = document.createElement("button");
         nutDichN.type = "button";
         nutDichN.className = "nutLuuTin";
-        nutDichN.textContent = "🌐 Dịch";
+        nutDichN.textContent = trichChuoi("dich", ngonNguHT);
         nutDichN.addEventListener("click", function () { dichTinNhan(t, dong); });
         dong.appendChild(nutDichN);
       }
@@ -4784,6 +5272,10 @@ if (typeof document !== "undefined") {
     apGiaoDien(c.giaoDien || "sang");
     document.body.classList.toggle("anGioTin", c.hienGioTin === false);
     capNhatLuoiNenGoi();
+    // Gói 5: ngôn ngữ lưu trên máy chủ là nguồn thật — khác ngôn ngữ đang hiện thì áp ngay
+    if (c.ngonNgu && NGON_NGU_HOP_LE_G5.indexOf(c.ngonNgu) !== -1 && c.ngonNgu !== ngonNguHT) {
+      datNgonNgu(c.ngonNgu, false);
+    }
   }
 
   function luuCaiDatTuCongTac() {
@@ -4806,7 +5298,8 @@ if (typeof document !== "undefined") {
       giaoDien: docRadio("giaoDien") || "sang",
       nhacChuong: docRadio("nhacChuong") || "mac-dinh",
       nenGoiDen: nenGoiDenChon,
-      nenGoiDenTep: nenGoiDenTepChon
+      nenGoiDenTep: nenGoiDenTepChon,
+      ngonNgu: ngonNguHT // Gói 5: giữ ngôn ngữ đã chọn khi lưu cài đặt khác
     }, true).then(function (kq) {
       if (!kq.ok) { hienToast(kq.loi || "Chưa lưu được cài đặt."); return; }
       caiDatHT = kq.caiDat;
@@ -4859,7 +5352,8 @@ if (typeof document !== "undefined") {
   }
 
   function taiThongTinTaiKhoan() {
-    $("sdtTaiKhoan").textContent = sdtHienTai || "";
+    $("sdtTaiKhoan").textContent = /^0\d{9}$/.test(sdtHienTai || "") ? sdtHienTai : "—";
+    taiTrangThaiLienKet(); // Gói 5: mục Tài khoản liên kết
     veKhuPin();
     if (!TQD_SERVER || !tokenMayChu) {
       $("thongTinPhien").textContent = "Chế độ xem thử — chưa nối máy chủ.";
@@ -5712,6 +6206,245 @@ if (typeof document !== "undefined") {
   }
 
   // --- Khởi tạo ---
+  // ================= GÓI 5 (tiếp): ÁP NGÔN NGỮ + ĐĂNG NHẬP GOOGLE/FACEBOOK =================
+  var ngonNguHT = "vi"; // ngôn ngữ đang hiển thị trên máy này
+
+  // t(khoa): lấy chuỗi theo ngôn ngữ đang hiển thị (rơi en -> vi như trichChuoi).
+  function t(khoa) { return trichChuoi(khoa, ngonNguHT); }
+
+  // Quét toàn bộ phần tử gắn data-i18n / data-i18n-ph / data-i18n-title và thay chuỗi.
+  // Chuỗi có thẻ HTML (vd mo_ta_sdt có <strong>) thì gán innerHTML — giá trị lấy từ
+  // bảng tĩnh của chính app, không phải dữ liệu người dùng, nên an toàn.
+  function apDungNgonNgu() {
+    try { document.documentElement.lang = ngonNguHT; } catch (e) {}
+    var ds = document.querySelectorAll("[data-i18n]");
+    for (var i = 0; i < ds.length; i++) {
+      var el = ds[i];
+      var chuoi = t(el.getAttribute("data-i18n"));
+      if (chuoi.indexOf("<") !== -1) el.innerHTML = chuoi; else el.textContent = chuoi;
+    }
+    var dp = document.querySelectorAll("[data-i18n-ph]");
+    for (var j = 0; j < dp.length; j++) {
+      dp[j].setAttribute("placeholder", t(dp[j].getAttribute("data-i18n-ph")));
+    }
+    var dt = document.querySelectorAll("[data-i18n-title]");
+    for (var h = 0; h < dt.length; h++) {
+      dt[h].setAttribute("title", t(dt[h].getAttribute("data-i18n-title")));
+    }
+    var sel = $("selNgonNgu");
+    if (sel && sel.value !== ngonNguHT) sel.value = ngonNguHT;
+    // Hai dòng liên kết trong trang Tài khoản vẽ bằng JS — vẽ lại theo ngôn ngữ mới.
+    if (typeof veLaiDongLienKet === "function") veLaiDongLienKet();
+  }
+
+  // Đặt ngôn ngữ hiển thị: áp ngay, nhớ ở máy, và (khi đang đăng nhập) lưu lên máy
+  // chủ theo tài khoản để đồng bộ đa thiết bị. luuMayChu=false khi giá trị ĐẾN từ
+  // máy chủ (tránh PUT thừa).
+  function datNgonNgu(ma, luuMayChu) {
+    if (NGON_NGU_HOP_LE_G5.indexOf(ma) === -1) ma = "vi";
+    ngonNguHT = ma;
+    try { localStorage.setItem("hialo_ngon_ngu", ma); } catch (e) {}
+    apDungNgonNgu();
+    if (luuMayChu && TQD_SERVER && tokenMayChu) {
+      goiAPI("/api/cai-dat", "PUT", { ngonNgu: ma }, true).catch(function () {});
+    }
+  }
+
+  // Khởi tạo lúc mở app: ưu tiên lựa chọn đã nhớ ở máy; chưa có thì suy từ trình
+  // duyệt. Khi đăng nhập xong, taiCaiDat() sẽ kéo caiDat.ngonNgu từ máy chủ về và
+  // dienCaiDatVaoTrang() áp đè nếu khác (nguồn thật là máy chủ).
+  function khoiTaoNgonNgu() {
+    var ma = null;
+    try { ma = localStorage.getItem("hialo_ngon_ngu"); } catch (e) {}
+    if (!ma || NGON_NGU_HOP_LE_G5.indexOf(ma) === -1) {
+      ma = phatHienNgonNguTuTrinhDuyet(navigator.language || "vi");
+    }
+    ngonNguHT = ma;
+    apDungNgonNgu();
+    var sel = $("selNgonNgu");
+    if (sel) sel.addEventListener("change", function () {
+      datNgonNgu(sel.value, true);
+      hienToast(t("da_doi_ngon_ngu"));
+    });
+  }
+
+  // ----- Đăng nhập Google / Facebook (khung sẵn sàng — chỉ chạy khi máy chủ có khóa) -----
+  // Luồng: GET /api/cau-hinh-oauth cho biết nhà cung cấp nào đang bật. Chưa bật nhà
+  // nào -> khối nút ở màn đăng nhập giữ nguyên trạng thái ẩn, không nạp SDK nào.
+  var cauHinhOAuthHT = null;
+  var googleSanSang = false, facebookSanSang = false;
+  var cheDoOAuth = "dang-nhap"; // "dang-nhap" ở màn hình vào · "lien-ket" ở trang Tài khoản
+  var trangThaiLienKetHT = null;
+
+  function taiCauHinhOAuth() {
+    if (!TQD_SERVER) return;
+    goiAPI("/api/cau-hinh-oauth", "GET", null, false).then(function (kq) {
+      if (!kq || !kq.ok) return;
+      cauHinhOAuthHT = kq;
+      var coBat = false;
+      if (kq.google && kq.google.bat && kq.google.clientId) { napGoogleSDK(kq.google.clientId); coBat = true; }
+      if (kq.facebook && kq.facebook.bat && kq.facebook.appId) { napFacebookSDK(kq.facebook.appId); coBat = true; }
+      if (coBat) {
+        var khu = $("khuDangNhapXaHoi");
+        if (khu) khu.classList.remove("an");
+      }
+    }).catch(function () {});
+  }
+
+  function napGoogleSDK(clientId) {
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      khoiTaoGoogle(clientId); return;
+    }
+    var sc = document.createElement("script");
+    sc.src = "https://accounts.google.com/gsi/client";
+    sc.async = true; sc.defer = true;
+    sc.onload = function () { khoiTaoGoogle(clientId); };
+    document.head.appendChild(sc);
+  }
+
+  function khoiTaoGoogle(clientId) {
+    try {
+      window.google.accounts.id.initialize({ client_id: clientId, callback: xuLyGoogleCredential });
+      var hop = $("hopNutGoogle");
+      if (hop && !hop.hasChildNodes()) {
+        window.google.accounts.id.renderButton(hop, { theme: "outline", size: "large", width: 280, text: "continue_with" });
+      }
+      googleSanSang = true;
+      veLaiDongLienKet();
+    } catch (e) {}
+  }
+
+  function xuLyGoogleCredential(resp) {
+    if (resp && resp.credential) guiMaXaHoi("google", resp.credential);
+  }
+
+  function napFacebookSDK(appId) {
+    window.fbAsyncInit = function () {
+      try {
+        window.FB.init({ appId: appId, cookie: false, xfbml: false, version: "v21.0" });
+        facebookSanSang = true;
+        var b = $("btnDangNhapFacebook");
+        if (b) b.classList.remove("an");
+        veLaiDongLienKet();
+      } catch (e) {}
+    };
+    if (window.FB) { window.fbAsyncInit(); return; }
+    var sc = document.createElement("script");
+    sc.src = "https://connect.facebook.net/vi_VN/sdk.js";
+    sc.async = true; sc.defer = true; sc.crossOrigin = "anonymous";
+    document.head.appendChild(sc);
+  }
+
+  function batDauFacebook() {
+    if (!facebookSanSang || !window.FB) return;
+    window.FB.login(function (resp) {
+      if (resp && resp.authResponse && resp.authResponse.accessToken) {
+        guiMaXaHoi("facebook", resp.authResponse.accessToken);
+      }
+    }, { scope: "public_profile,email" });
+  }
+
+  // Gửi mã của nhà cung cấp lên máy chủ: chế độ đăng nhập thì vào thẳng app qua
+  // hoanTatDangNhapTuMayChu (cùng đường với OTP/MO-SMS); chế độ liên kết thì ở lại
+  // trang Tài khoản và vẽ lại trạng thái.
+  function guiMaXaHoi(ncc, ma) {
+    var dangLienKet = (cheDoOAuth === "lien-ket");
+    var duong = dangLienKet ? ("/api/lien-ket/" + ncc) : ("/api/dang-nhap/" + ncc);
+    var than = (ncc === "google") ? { idToken: ma } : { accessToken: ma };
+    goiAPI(duong, "POST", than, dangLienKet).then(function (kq) {
+      cheDoOAuth = "dang-nhap";
+      if (!kq || !kq.ok) {
+        hienLoiXaHoi((kq && kq.loi) || t("loi_xa_hoi"), dangLienKet);
+        return;
+      }
+      if (dangLienKet) { taiTrangThaiLienKet(); return; }
+      hoanTatDangNhapTuMayChu(kq, kq.sdt);
+    }).catch(function () {
+      cheDoOAuth = "dang-nhap";
+      hienLoiXaHoi(t("loi_xa_hoi"), dangLienKet);
+    });
+  }
+
+  function hienLoiXaHoi(loi, oTrangLienKet) {
+    var el = $(oTrangLienKet ? "loiLienKet" : "loiXaHoi");
+    if (el) el.textContent = loi || "";
+  }
+
+  // ----- Trạng thái liên kết trong trang Tài khoản & bảo mật -----
+  function taiTrangThaiLienKet() {
+    if (!TQD_SERVER || !tokenMayChu) return;
+    goiAPI("/api/lien-ket", "GET", null, true).then(function (kq) {
+      if (!kq || !kq.ok) return;
+      trangThaiLienKetHT = kq;
+      veDongLienKet("google", kq.lienKet.google);
+      veDongLienKet("facebook", kq.lienKet.facebook);
+      var gc = $("ghiChuCanSDT");
+      if (gc) gc.classList.toggle("an", !kq.taiKhoanXaHoi);
+    }).catch(function () {});
+  }
+
+  function veLaiDongLienKet() {
+    if (!trangThaiLienKetHT) return;
+    veDongLienKet("google", trangThaiLienKetHT.lienKet.google);
+    veDongLienKet("facebook", trangThaiLienKetHT.lienKet.facebook);
+  }
+
+  function veDongLienKet(ncc, tt) {
+    var elTt = $(ncc === "google" ? "ttLienKetGoogle" : "ttLienKetFacebook");
+    var elBtn = $(ncc === "google" ? "btnLienKetGoogle" : "btnLienKetFacebook");
+    if (!elTt || !elBtn || !tt) return;
+    if (tt.daLienKet) {
+      elTt.textContent = t("lk_da") + (tt.email ? " · " + tt.email : (tt.ten ? " · " + tt.ten : ""));
+      elBtn.textContent = t("btn_huy_lien_ket");
+      elBtn.disabled = false;
+    } else if (!tt.bat) {
+      elTt.textContent = t("lk_khong_bat");
+      elBtn.textContent = t("btn_lien_ket");
+      elBtn.disabled = true;
+    } else {
+      elTt.textContent = t("lk_chua");
+      elBtn.textContent = t("btn_lien_ket");
+      elBtn.disabled = false;
+    }
+  }
+
+  function bamNutLienKet(ncc) {
+    var tt = trangThaiLienKetHT && trangThaiLienKetHT.lienKet[ncc];
+    if (!tt || !tt.bat) return;
+    if (tt.daLienKet) {
+      if (!window.confirm(t("xac_nhan_huy_lk"))) return;
+      goiAPI("/api/huy-lien-ket", "POST", { nhaCungCap: ncc }, true).then(function (kq) {
+        if (!kq || !kq.ok) { hienLoiXaHoi((kq && kq.loi) || t("loi_xa_hoi"), true); return; }
+        taiTrangThaiLienKet();
+      }).catch(function () {});
+      return;
+    }
+    // Chưa liên kết: mở luồng của nhà cung cấp ở chế độ liên kết. Google dùng One
+    // Tap (prompt) — tài khoản Google đang đăng nhập trình duyệt sẽ hiện hộp chọn.
+    cheDoOAuth = "lien-ket";
+    if (ncc === "google") {
+      if (googleSanSang && window.google) window.google.accounts.id.prompt();
+      else cheDoOAuth = "dang-nhap";
+    } else {
+      batDauFacebook();
+    }
+  }
+
+  function ganSuKienOAuth() {
+    var bFb = $("btnDangNhapFacebook");
+    if (bFb) bFb.addEventListener("click", function () { cheDoOAuth = "dang-nhap"; batDauFacebook(); });
+    var bG = $("btnLienKetGoogle");
+    if (bG) bG.addEventListener("click", function () { bamNutLienKet("google"); });
+    var bF = $("btnLienKetFacebook");
+    if (bF) bF.addEventListener("click", function () { bamNutLienKet("facebook"); });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    khoiTaoNgonNgu();
+    ganSuKienOAuth();
+    taiCauHinhOAuth();
+  });
+
   document.addEventListener("DOMContentLoaded", function () {
     dungChonEmoji();
     khoiPhucDangNhap();
@@ -6012,4 +6745,11 @@ if (typeof module !== "undefined" && module.exports) {
     locHoSo: locHoSo,
     dinhDangKhoangCach: dinhDangKhoangCach
   };
+}
+
+// Gói 5: xuất thêm cho kiểm thử logic thuần (từ điển + rơi chuỗi + dò ngôn ngữ)
+if (typeof module !== "undefined" && module.exports) {
+  module.exports.BANG_NGON_NGU = BANG_NGON_NGU;
+  module.exports.trichChuoi = trichChuoi;
+  module.exports.phatHienNgonNguTuTrinhDuyet = phatHienNgonNguTuTrinhDuyet;
 }

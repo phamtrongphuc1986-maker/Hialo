@@ -875,3 +875,18 @@ html.toi .oSticker:active { background: #3a1030; }
 .nhanSticker { font-size: 11px; opacity: 0.75; }
 .selTuHuy { max-width: 118px; font-size: 12px; padding: 6px 2px; border-radius: 10px; border: 1.5px solid #e5e7eb; background: #fff; }
 html.toi .selTuHuy { background: #232b3d; border-color: #333d52; color: #f2f4f8; }
+
+/* ===== Gói 5: đăng nhập Google/Facebook + tài khoản liên kết ===== */
+.chiaOAuth { text-align: center; color: #6b7280; font-size: 13px; margin: 16px 0 10px; }
+.hopNutGoogle { display: flex; justify-content: center; margin: 6px 0 10px; min-height: 44px; }
+.nutFacebook { display: flex; align-items: center; justify-content: center; gap: 8px; width: 280px; max-width: 100%; margin: 0 auto; padding: 11px 16px; border: none; border-radius: 10px; background: #1877f2; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
+.nutFacebook .chuF { font-weight: 800; font-size: 18px; line-height: 1; }
+.nutFacebook:active { filter: brightness(0.92); }
+.dongLienKet { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eef0f3; }
+html.toi .dongLienKet { border-color: #333d52; }
+.tenLienKet { font-weight: 600; min-width: 104px; display: flex; align-items: center; gap: 8px; }
+.logoLienKet { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-weight: 800; font-size: 14px; }
+.logoGoogle { background: #fff; color: #4285f4; border: 1.5px solid #dadce0; }
+.logoFacebook { background: #1877f2; color: #fff; }
+.ttLienKet { flex: 1; font-size: 13px; color: #6b7280; word-break: break-all; }
+html.toi .ttLienKet { color: #aab4c4; }

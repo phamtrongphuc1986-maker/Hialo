@@ -1,5 +1,5 @@
 /* Hialo service worker: network-first cho file cùng nguồn (trang luôn mới khi có mạng). */
-var TEN_CACHE = 'hialo-v14';
+var TEN_CACHE = 'hialo-v15';
 self.addEventListener('install', function (e) { self.skipWaiting(); });
 self.addEventListener('activate', function (e) {
   e.waitUntil(
@@ -36,3 +36,5 @@ self.addEventListener('fetch', function (e) {
 /* hialo-v12 (14/11/2026): Goi 1 — xac thuc ho so + huy hieu, tin nhan cho, chi nhan tin tu ban be, bao cao, anh mo tu nguoi la, TURN (coturn) cho cuoc goi */
 
 /* hialo-v14 (14/11/2026): Goi 4 — dich tin nhan trong chat, sticker, thu hoi tin, da xem/dang nhap, tin tu huy */
+
+/* hialo-v15 (14/11/2026): Goi 5 — da ngon ngu (vi/en/tl/id/th) + dang nhap Google/Facebook (khung cho khoa OAuth) */
