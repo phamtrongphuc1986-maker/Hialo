@@ -938,6 +938,12 @@ if (typeof document !== "undefined") {
         nBoost.textContent = "🚀 Đang Boost";
         phai.appendChild(nBoost);
       }
+      if (p.tongQuaNhan > 0) { // Gói 3: tổng quà hồ sơ đã nhận
+        var nQua = document.createElement("span");
+        nQua.className = "nhanTongQua";
+        nQua.textContent = "🎁 ×" + p.tongQuaNhan;
+        phai.appendChild(nQua);
+      }
       var hangNut = document.createElement("div");
       hangNut.className = "cotNutDuoi";
       var nut = document.createElement("button");
@@ -967,6 +973,14 @@ if (typeof document !== "undefined") {
           thichHoSo(p, "sieu", function () { veKetQua(dsQuanhDayHT); });
         });
         hangNut.appendChild(nutSieu);
+        var nutQua = document.createElement("button"); // Gói 3: tặng quà bằng điểm thưởng
+        nutQua.type = "button";
+        nutQua.className = "nutChao nutTangQua";
+        nutQua.textContent = "🎁 Tặng quà";
+        nutQua.addEventListener("click", function () {
+          moChonQua({ id: p.id, nick: p.ten });
+        });
+        hangNut.appendChild(nutQua);
       }
       phai.appendChild(hangNut);
 
@@ -1389,6 +1403,600 @@ if (typeof document !== "undefined") {
   }
 
   // ======================================================================
+  // ===== GÓI 3: HIỆN DIỆN & CỘNG ĐỒNG (khoảnh khắc 24h, điểm danh +   =====
+  // ===== điểm thưởng, quà ảo, phòng thoại, thông báo người mới)      =====
+  // ======================================================================
+  var nhomKKHT = [];        // nguồn khoảnh khắc gần nhất từ máy chủ
+  var xemKK = null;         // { nhom, i } đang xem khoảnh khắc
+  var anhKKDangChon = null; // File ảnh chờ đăng khoảnh khắc
+  var quaDich = null;       // { sdt?, id?, nick } người sắp nhận quà
+  var danhMucQuaHT = [];    // danh mục quà từ máy chủ
+  var phongHT = null;       // { id, ten, laChu, idCuaToi, pcs:{}, amThanh:{}, iceCho:{}, luongMic, tatMicTu, danhSach:[] }
+
+  function thoiGianConLaiKK(hetLuc) {
+    var ms = hetLuc - Date.now();
+    if (ms <= 0) return "đã hết hạn";
+    var gio = Math.floor(ms / 3600000), phut = Math.round((ms % 3600000) / 60000);
+    return gio > 0 ? ("còn " + gio + " giờ" + (phut ? " " + phut + " phút" : "")) : ("còn " + phut + " phút");
+  }
+
+  // ---------- Khoảnh khắc ----------
+  function taiKhoanhKhac() {
+    if (!TQD_SERVER || !tokenMayChu) return;
+    goiAPI("/api/khoanh-khac", "GET", null, true).then(function (kq) {
+      if (!kq.ok) return;
+      nhomKKHT = kq.nhom || [];
+      veHangKhoanhKhac();
+    });
+  }
+
+  function veHangKhoanhKhac() {
+    var hang = $("hangKhoanhKhac");
+    if (!hang) return;
+    hang.innerHTML = "";
+    var nhomCuaToi = null;
+    nhomKKHT.forEach(function (n) { if (n.cuaToi) nhomCuaToi = n; });
+    // Ô của tôi (luôn đầu hàng): bấm avatar xem lại, bấm dấu + đăng mới
+    var oToi = document.createElement("button");
+    oToi.type = "button"; oToi.className = "oKhoanhKhac";
+    var vongToi = document.createElement("span");
+    vongToi.className = "vongKK cuaToi";
+    vongToi.textContent = nhomCuaToi ? (nhomCuaToi.emoji || "😀") : "📸";
+    var cong = document.createElement("span");
+    cong.className = "dauCongKK"; cong.textContent = "+";
+    vongToi.appendChild(cong);
+    var tenToi = document.createElement("span");
+    tenToi.className = "tenKK"; tenToi.textContent = "Của bạn";
+    oToi.appendChild(vongToi); oToi.appendChild(tenToi);
+    oToi.addEventListener("click", function (e) {
+      if (nhomCuaToi) moXemKhoanhKhac(nhomCuaToi, 0);
+      else moHopDangKK();
+    });
+    cong.addEventListener("click", function (e) { e.stopPropagation(); moHopDangKK(); });
+    hang.appendChild(oToi);
+    nhomKKHT.forEach(function (n) {
+      if (n.cuaToi) return;
+      var o = document.createElement("button");
+      o.type = "button"; o.className = "oKhoanhKhac";
+      var v = document.createElement("span");
+      v.className = "vongKK" + (n.chuaXem > 0 ? " chuaXem" : "");
+      v.textContent = n.emoji || "😀";
+      var t = document.createElement("span");
+      t.className = "tenKK"; t.textContent = n.nick || "";
+      o.appendChild(v); o.appendChild(t);
+      o.addEventListener("click", function () { moXemKhoanhKhac(n, 0); });
+      hang.appendChild(o);
+    });
+    $("trongKhoanhKhac").classList.toggle("an", nhomKKHT.length > 0);
+  }
+
+  function moHopDangKK() {
+    $("hopDangKhoanhKhac").classList.remove("an");
+    $("inpChuKhoanhKhac").focus();
+  }
+  function dongHopDangKK() {
+    $("hopDangKhoanhKhac").classList.add("an");
+    anhKKDangChon = null;
+    $("inpChuKhoanhKhac").value = "";
+    $("tenAnhKhoanhKhac").textContent = "Chưa chọn ảnh (đăng chữ không cũng được)";
+    $("btnBoAnhKhoanhKhac").classList.add("an");
+  }
+
+  function dangKhoanhKhac() {
+    var chu = $("inpChuKhoanhKhac").value.trim();
+    var gui = function (tepId) {
+      goiAPI("/api/khoanh-khac", "POST", { tepId: tepId || "", chu: chu }, true).then(function (kq) {
+        if (!kq.ok) { hienToast(kq.loi || "Chưa đăng được khoảnh khắc."); return; }
+        dongHopDangKK();
+        hienToast("📸 Đã đăng khoảnh khắc — sẽ tự biến mất sau 24 giờ.");
+        taiKhoanhKhac();
+      });
+    };
+    if (anhKKDangChon) {
+      taiTepRiengLen(anhKKDangChon, "khoanh-khac").then(function (up) {
+        if (!up.ok) { hienToast(up.loi || "Chưa tải được ảnh lên."); return; }
+        gui(up.tepId);
+      });
+    } else {
+      if (!chu) { hienToast("Hãy chọn ảnh hoặc viết đôi dòng cho khoảnh khắc nhé."); return; }
+      gui("");
+    }
+  }
+
+  function moXemKhoanhKhac(nhom, i) {
+    if (!nhom || !nhom.khoanhKhac || !nhom.khoanhKhac.length) return;
+    xemKK = { nhom: nhom, i: Math.max(0, Math.min(i, nhom.khoanhKhac.length - 1)) };
+    $("manXemKhoanhKhac").classList.remove("an");
+    veXemKhoanhKhac();
+  }
+  function dongXemKhoanhKhac() {
+    $("manXemKhoanhKhac").classList.add("an");
+    xemKK = null;
+    taiKhoanhKhac();
+  }
+  function veXemKhoanhKhac() {
+    if (!xemKK) return;
+    var n = xemKK.nhom, k = n.khoanhKhac[xemKK.i];
+    if (!k) return;
+    $("avatarXemKK").textContent = n.emoji || "😀";
+    $("tenXemKK").textContent = (n.nick || "") + (n.xacThuc ? " ✅" : "") + " · " + (xemKK.i + 1) + "/" + n.khoanhKhac.length;
+    $("gioXemKK").textContent = dinhDangGio(k.luc) + " · " + thoiGianConLaiKK(k.hetLuc);
+    var anh = $("anhXemKK");
+    if (k.tepId) { anh.src = duongDanTep(k.tepId); anh.classList.remove("an"); }
+    else { anh.classList.add("an"); anh.removeAttribute("src"); }
+    $("chuXemKK").textContent = k.chu || "";
+    $("btnKKTrangTruoc").disabled = xemKK.i <= 0;
+    $("btnKKTiepTheo").disabled = xemKK.i >= n.khoanhKhac.length - 1;
+    $("btnXoaKK").classList.toggle("an", !n.cuaToi);
+    var hopXem = $("dsNguoiXemKK");
+    hopXem.innerHTML = "";
+    $("txtNguoiXemKK").classList.add("an");
+    if (n.cuaToi) {
+      // Chính chủ: tải danh sách người đã xem của khoảnh khắc này
+      goiAPI("/api/khoanh-khac/cua-toi", "GET", null, true).then(function (kq) {
+        if (!kq.ok || !xemKK) return;
+        var cuaToi = (kq.khoanhKhac || []).filter(function (x) { return x.id === k.id; })[0];
+        if (!cuaToi) return;
+        $("txtNguoiXemKK").textContent = "👁 " + (cuaToi.soNguoiXem || 0) + " người đã xem khoảnh khắc này";
+        $("txtNguoiXemKK").classList.remove("an");
+        (cuaToi.nguoiXem || []).forEach(function (ng) {
+          hopXem.appendChild(taoTheNguoi(ng.emoji, ng.nick, "Đã xem lúc " + dinhDangGio(ng.luc), null));
+        });
+      });
+    } else if (!k.daXemBoiToi) {
+      goiAPI("/api/khoanh-khac/xem", "POST", { id: k.id }, true).then(function (kq) {
+        if (kq.ok) k.daXemBoiToi = true;
+      });
+    }
+  }
+
+  // ---------- Thông báo ----------
+  function taiThongBao() {
+    if (!TQD_SERVER || !tokenMayChu) return;
+    goiAPI("/api/thong-bao", "GET", null, true).then(function (kq) {
+      if (!kq.ok) return;
+      var ds = kq.thongBao || [];
+      var hop = $("dsThongBao");
+      hop.innerHTML = "";
+      ds.forEach(function (t) {
+        var the = document.createElement("div");
+        the.className = "theThongBao" + (!t.daDoc ? " chuaDocTB" : "");
+        var ic = document.createElement("span");
+        ic.className = "avatarChat";
+        ic.textContent = t.loai === "nguoi-moi" ? "🆕" : "🔔";
+        var giua = document.createElement("div");
+        giua.className = "thongTinNguoi";
+        var nd = document.createElement("p");
+        nd.className = "tenNguoi"; nd.textContent = t.noiDung;
+        var tg = document.createElement("p");
+        tg.className = "chiTietNguoi"; tg.textContent = dinhDangGio(t.luc);
+        giua.appendChild(nd); giua.appendChild(tg);
+        the.appendChild(ic); the.appendChild(giua);
+        hop.appendChild(the);
+      });
+      $("trongThongBao").classList.toggle("an", ds.length > 0);
+      var huy = $("huySoThongBao");
+      huy.textContent = kq.chuaDoc || 0;
+      huy.classList.toggle("an", !(kq.chuaDoc > 0));
+      if (kq.chuaDoc > 0) {
+        // Đã hiện cho người dùng thấy -> đánh dấu đã đọc ở máy chủ
+        goiAPI("/api/thong-bao/da-doc", "POST", {}, true);
+      }
+    });
+  }
+
+  // ---------- Điểm danh + điểm thưởng + quà ----------
+  function taiDiemThuong() {
+    if (!TQD_SERVER || !tokenMayChu) return;
+    goiAPI("/api/diem", "GET", null, true).then(function (kq) {
+      if (!kq.ok) return;
+      var chuoi = kq.chuoi || 0;
+      var dong = "🔥 Chuỗi điểm danh: " + chuoi + " ngày · ⭐ Điểm thưởng: " + (kq.diem || 0);
+      if (kq.mocTiepTheo) dong += " · Đạt " + kq.mocTiepTheo + " ngày liên tiếp được +" + kq.thuongMocTiep + " điểm";
+      $("txtTrangThaiDiem").textContent = dong;
+      var nut = $("btnDiemDanh");
+      nut.disabled = !!kq.daDiemDanhHomNay;
+      nut.textContent = kq.daDiemDanhHomNay ? "✅ Hôm nay đã điểm danh" : "✅ Điểm danh hôm nay (+" + (kq.diemDanhDuoc || 10) + " điểm)";
+      var lt = kq.luotThem || {};
+      $("txtLuotThem").textContent = "Lượt đổi bằng điểm đang có: ⭐ Siêu thích +" + (lt.sieuThich || 0) + " · 🚀 Boost +" + (lt.boost || 0) + " (tự dùng khi hết lượt thường trong ngày).";
+    });
+    goiAPI("/api/qua-tang/danh-muc", "GET", null, true).then(function (kq) {
+      if (!kq.ok) return;
+      danhMucQuaHT = kq.danhMuc || [];
+      $("txtTongQuaNhan").textContent = kq.tongQuaNhan || 0;
+      var hop = $("dsQuaGanDay");
+      hop.innerHTML = "";
+      (kq.quaGanDay || []).forEach(function (q) {
+        hop.appendChild(taoTheNguoi(q.emoji, q.ten, "Từ " + (q.nguoiTang.nick || "một người bạn") + " · " + dinhDangGio(q.luc), null));
+      });
+    });
+  }
+
+  function diemDanhHomNay() {
+    goiAPI("/api/diem/diem-danh", "POST", {}, true).then(function (kq) {
+      if (!kq.ok) { hienToast(kq.loi || "Chưa điểm danh được."); return; }
+      var msg = "✅ Điểm danh thành công: +" + (kq.diemVuaNhan || 10) + " điểm";
+      if (kq.thuongMocVuaNhan > 0) msg += " + thưởng mốc chuỗi " + (kq.chuoi || 0) + " ngày: +" + kq.thuongMocVuaNhan + " điểm 🎉";
+      hienToast(msg);
+      taiDiemThuong();
+      taiTrangThaiGhepDoi();
+    });
+  }
+
+  function doiDiemThuong(loai) {
+    goiAPI("/api/diem/doi", "POST", { loai: loai }, true).then(function (kq) {
+      if (!kq.ok) { hienToast(kq.loi || "Chưa đổi được điểm."); return; }
+      hienToast(loai === "boost" ? "🚀 Đã đổi +1 lượt Boost — dùng ở mục Ghép đôi nhé." : "⭐ Đã đổi +1 lượt Siêu thích.");
+      taiDiemThuong();
+      taiTrangThaiGhepDoi();
+    });
+  }
+
+  // ---------- Tặng quà ----------
+  function moChonQua(dich) {
+    if (!TQD_SERVER || !tokenMayChu) return;
+    quaDich = dich;
+    $("tenNguoiNhanQua").textContent = dich.nick || "";
+    $("inpLoiNhanQua").value = "";
+    $("hopChonQua").classList.remove("an");
+    goiAPI("/api/qua-tang/danh-muc", "GET", null, true).then(function (kq) {
+      if (!kq.ok) return;
+      danhMucQuaHT = kq.danhMuc || [];
+      $("txtDiemKhiTangQua").textContent = kq.diem || 0;
+      veLuoiQua();
+    });
+  }
+  function dongChonQua() {
+    $("hopChonQua").classList.add("an");
+    quaDich = null;
+  }
+  function veLuoiQua() {
+    var luoi = $("luoiQua");
+    luoi.innerHTML = "";
+    danhMucQuaHT.forEach(function (q) {
+      var o = document.createElement("button");
+      o.type = "button"; o.className = "oQua";
+      var e = document.createElement("span"); e.className = "emojiQua"; e.textContent = q.emoji;
+      var t = document.createElement("span"); t.textContent = q.ten;
+      var g = document.createElement("span"); g.className = "giaQua"; g.textContent = q.gia + " điểm";
+      o.appendChild(e); o.appendChild(t); o.appendChild(g);
+      o.addEventListener("click", function () { guiQua(q); });
+      luoi.appendChild(o);
+    });
+  }
+  function guiQua(q) {
+    if (!quaDich) return;
+    var than = { quaId: q.id, loiNhan: $("inpLoiNhanQua").value.trim() };
+    if (quaDich.sdt) than.sdt = quaDich.sdt;
+    else if (quaDich.id) than.id = quaDich.id;
+    var dichLucGui = quaDich;
+    goiAPI("/api/qua-tang", "POST", than, true).then(function (kq) {
+      if (!kq.ok) { hienToast(kq.loi || "Chưa tặng được quà."); return; }
+      hienToast("🎁 Đã tặng " + q.ten + " cho " + (dichLucGui.nick || "người ấy") + "!");
+      dongChonQua();
+      taiDiemThuong();
+      // Đang ở đúng màn chat với người nhận -> hiện thẻ quà ngay
+      if (chatVoi && kq.tin && ((dichLucGui.sdt && chatVoi.sdt === dichLucGui.sdt))) {
+        themBongBong(kq.tin);
+        if (kq.tin.tg > chatSince) chatSince = kq.tin.tg;
+      }
+    });
+  }
+
+  // ---------- Phòng thoại ----------
+  function taiPhongThoai() {
+    if (!TQD_SERVER || !tokenMayChu) return;
+    var qs = (viTri && typeof viTri.lat === "number") ? ("?lat=" + encodeURIComponent(viTri.lat) + "&lng=" + encodeURIComponent(viTri.lng)) : "";
+    goiAPI("/api/phong-thoai" + qs, "GET", null, true).then(function (kq) {
+      if (!kq.ok) return;
+      var hop = $("dsPhongThoai");
+      hop.innerHTML = "";
+      var ds = kq.phong || [];
+      ds.forEach(function (p) {
+        var the = document.createElement("div");
+        the.className = "thePhongThoai";
+        var ic = document.createElement("span");
+        ic.className = "avatarChat"; ic.textContent = "🎙️";
+        var giua = document.createElement("div");
+        giua.className = "thongTinNguoi";
+        var ten = document.createElement("p");
+        ten.className = "tenNguoi"; ten.textContent = p.ten;
+        var ct = document.createElement("p");
+        ct.className = "chiTietNguoi";
+        ct.textContent = "📍 " + p.khuVucTen + " · 👥 " + p.soNguoi + "/" + (kq.toiDaNguoi || 8) +
+          " · Chủ phòng: " + (p.chuPhong.nick || "") + (p.chuDe ? " · " + p.chuDe : "");
+        giua.appendChild(ten); giua.appendChild(ct);
+        var nutVao = document.createElement("button");
+        nutVao.type = "button"; nutVao.className = "nutChinh nho"; nutVao.textContent = "Vào phòng";
+        nutVao.addEventListener("click", function () { vaoPhongThoai(p); });
+        the.appendChild(ic); the.appendChild(giua); the.appendChild(nutVao);
+        if (p.cuaToi) {
+          var nutDong = document.createElement("button");
+          nutDong.type = "button"; nutDong.className = "nutPhu nho nutDangXuat"; nutDong.textContent = "Đóng";
+          nutDong.addEventListener("click", function () {
+            goiAPI("/api/phong-thoai/dong", "POST", { id: p.id }, true).then(function (kq2) {
+              if (!kq2.ok) { hienToast(kq2.loi || "Chưa đóng được phòng."); return; }
+              hienToast("Đã đóng phòng thoại.");
+              taiPhongThoai();
+            });
+          });
+          the.appendChild(nutDong);
+        }
+        hop.appendChild(the);
+      });
+      $("trongPhongThoai").classList.toggle("an", ds.length > 0);
+    });
+  }
+
+  function taoPhongThoaiMoi() {
+    var ten = $("inpTenPhong").value.trim();
+    if (!ten) { hienToast("Hãy đặt tên cho phòng thoại nhé."); return; }
+    var than = { ten: ten, chuDe: $("inpChuDePhong").value.trim() };
+    if (viTri && typeof viTri.lat === "number" && !viTri.macDinh) { than.lat = viTri.lat; than.lng = viTri.lng; }
+    goiAPI("/api/phong-thoai", "POST", than, true).then(function (kq) {
+      if (!kq.ok) { hienToast(kq.loi || "Chưa tạo được phòng."); return; }
+      $("hopTaoPhong").classList.add("an");
+      $("inpTenPhong").value = ""; $("inpChuDePhong").value = "";
+      taiPhongThoai();
+      vaoPhongThoai(kq.phong);
+    });
+  }
+
+  function guiTinHieuKhiSanSang(obj, soLan) {
+    if (guiTinHieu(obj)) return;
+    if ((soLan || 0) >= 6) { hienToast("Chưa kết nối được kênh thoại. Kiểm tra mạng rồi thử lại nhé."); roiPhongCucBo(); return; }
+    ketNoiTinHieu();
+    setTimeout(function () { if (phongHT) guiTinHieuKhiSanSang(obj, (soLan || 0) + 1); }, 700);
+  }
+
+  function vaoPhongThoai(p) {
+    if (!p || phongHT) return;
+    if (goiHT) { hienToast("Bạn đang trong cuộc gọi 1-1 — hãy kết thúc cuộc gọi trước khi vào phòng thoại nhé."); return; }
+    if (!hoTroGoi()) { hienToast("Thiết bị/trình duyệt này chưa hỗ trợ gọi thoại."); return; }
+    taiCauHinhICE();
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (luong) {
+      phongHT = {
+        id: p.id, ten: p.ten, chuDe: p.chuDe || "", laChu: !!p.cuaToi,
+        idCuaToi: "", pcs: {}, amThanh: {}, iceCho: {}, danhSach: [],
+        luongMic: luong, tatMicTu: false, tatMicBoiChu: false
+      };
+      $("tenPhongDangO").textContent = "🎙️ " + p.ten;
+      $("chuDePhongDangO").textContent = "📍 " + (p.khuVucTen || "") + (p.chuDe ? " · " + p.chuDe : "");
+      $("loiPhong").textContent = "";
+      $("btnDongPhong").classList.toggle("an", !phongHT.laChu);
+      $("manPhongThoai").classList.remove("an");
+      capNhatNutMicPhong();
+      ketNoiTinHieu();
+      guiTinHieuKhiSanSang({ loaiTin: "phong-vao", phongId: p.id }, 0);
+    }).catch(function (e) {
+      hienToast(loiQuyenMedia(e, "thoai"));
+    });
+  }
+
+  function phongTaoPC(idBan, chuDong) {
+    if (!phongHT || phongHT.pcs[idBan]) return phongHT && phongHT.pcs[idBan];
+    var pc = new RTCPeerConnection({ iceServers: cauHinhICEHT });
+    phongHT.pcs[idBan] = pc;
+    if (phongHT.luongMic) {
+      phongHT.luongMic.getAudioTracks().forEach(function (tr) { pc.addTrack(tr, phongHT.luongMic); });
+    }
+    pc.onicecandidate = function (ev) {
+      if (ev.candidate) guiTinHieu({ loaiTin: "phong-ice", phongId: phongHT.id, denId: idBan, candidate: ev.candidate.toJSON ? ev.candidate.toJSON() : ev.candidate });
+    };
+    pc.ontrack = function (ev) {
+      if (!phongHT) return;
+      var au = phongHT.amThanh[idBan];
+      if (!au) {
+        au = document.createElement("audio");
+        au.autoplay = true; au.setAttribute("playsinline", "");
+        document.body.appendChild(au);
+        phongHT.amThanh[idBan] = au;
+      }
+      if (ev.streams && ev.streams[0]) au.srcObject = ev.streams[0];
+    };
+    pc.onconnectionstatechange = function () {
+      if (pc.connectionState === "failed" || pc.connectionState === "closed") phongDongPC(idBan);
+    };
+    if (chuDong) {
+      pc.createOffer().then(function (offer) { return pc.setLocalDescription(offer); }).then(function () {
+        guiTinHieu({ loaiTin: "phong-offer", phongId: phongHT.id, denId: idBan, offer: pc.localDescription });
+      }).catch(function () {});
+    }
+    return pc;
+  }
+  function phongDongPC(idBan) {
+    if (!phongHT) return;
+    var pc = phongHT.pcs[idBan];
+    if (pc) { try { pc.close(); } catch (e) {} delete phongHT.pcs[idBan]; }
+    var au = phongHT.amThanh[idBan];
+    if (au) { try { au.srcObject = null; au.remove(); } catch (e) {} delete phongHT.amThanh[idBan]; }
+    delete phongHT.iceCho[idBan];
+  }
+  function phongNapIce(idBan) {
+    if (!phongHT) return;
+    var pc = phongHT.pcs[idBan];
+    var hang = phongHT.iceCho[idBan] || [];
+    if (!pc || !pc.remoteDescription) return;
+    while (hang.length) {
+      var c = hang.shift();
+      try { pc.addIceCandidate(new RTCIceCandidate(c)); } catch (e) {}
+    }
+  }
+  function apTrangThaiMicPhong() {
+    if (!phongHT || !phongHT.luongMic) return;
+    var bat = !phongHT.tatMicTu && !phongHT.tatMicBoiChu;
+    phongHT.luongMic.getAudioTracks().forEach(function (tr) { tr.enabled = bat; });
+    capNhatNutMicPhong();
+  }
+  function capNhatNutMicPhong() {
+    var nut = $("btnMicPhong");
+    if (!nut || !phongHT) return;
+    if (phongHT.tatMicBoiChu) { nut.textContent = "🔇 Chủ phòng đã tắt mic"; nut.disabled = true; }
+    else { nut.disabled = false; nut.textContent = phongHT.tatMicTu ? "🔇 Mic đang tắt" : "🎤 Mic đang bật"; }
+  }
+  function veThanhVienPhong() {
+    if (!phongHT) return;
+    var hop = $("dsThanhVienPhong");
+    hop.innerHTML = "";
+    phongHT.danhSach.forEach(function (tv) {
+      var nutPhai = null;
+      if (phongHT.laChu && tv.id !== phongHT.idCuaToi) {
+        nutPhai = document.createElement("button");
+        nutPhai.type = "button"; nutPhai.className = "nutPhu nho";
+        nutPhai.textContent = tv.tatMicBoiChu ? "🔊 Bật mic" : "🔇 Tắt mic";
+        (function (tv2, nut2) {
+          nut2.addEventListener("click", function () {
+            guiTinHieu({ loaiTin: "phong-tat-mic", phongId: phongHT.id, denId: tv2.id, tat: !tv2.tatMicBoiChu });
+          });
+        })(tv, nutPhai);
+      }
+      var chiTiet = (tv.chuPhong ? "👑 Chủ phòng · " : "") + ((tv.tatMicTu || tv.tatMicBoiChu) ? "🔇 Đang tắt mic" : "🎤 Đang mở mic");
+      hop.appendChild(taoTheNguoi(tv.emoji, tv.nick, chiTiet, nutPhai));
+    });
+  }
+  function roiPhongCucBo() {
+    if (!phongHT) return;
+    Object.keys(phongHT.pcs).forEach(function (id) { phongDongPC(id); });
+    if (phongHT.luongMic) phongHT.luongMic.getTracks().forEach(function (tr) { try { tr.stop(); } catch (e) {} });
+    phongHT = null;
+    $("manPhongThoai").classList.add("an");
+  }
+  function roiPhongThoai() {
+    if (!phongHT) return;
+    var laChu = phongHT.laChu;
+    guiTinHieu({ loaiTin: "phong-roi", phongId: phongHT.id });
+    roiPhongCucBo();
+    if (laChu) hienToast("Bạn rời phòng — phòng thoại đã đóng cho mọi người.");
+    taiPhongThoai();
+  }
+
+  function xuLyTinPhong(msg) {
+    if (!phongHT) {
+      // Chưa ở trong phòng nhưng chủ phòng đóng phòng mình đang xem danh sách -> làm mới
+      if (msg.loaiTin === "phong-dong") taiPhongThoai();
+      return;
+    }
+    if (msg.phongId && msg.phongId !== phongHT.id) return;
+    if (msg.loaiTin === "phong-vao-ok") {
+      phongHT.idCuaToi = msg.idCuaToi || "";
+      phongHT.laChu = !!msg.chuPhong;
+      phongHT.danhSach = msg.danhSach || [];
+      $("btnDongPhong").classList.toggle("an", !phongHT.laChu);
+      veThanhVienPhong();
+      return;
+    }
+    if (msg.loaiTin === "phong-nguoi-vao") {
+      if (msg.nguoi && msg.nguoi.id && msg.nguoi.id !== phongHT.idCuaToi) phongTaoPC(msg.nguoi.id, true);
+      return;
+    }
+    if (msg.loaiTin === "phong-offer") {
+      var pcNhan = phongTaoPC(msg.tuId, false);
+      if (!pcNhan) return;
+      pcNhan.setRemoteDescription(new RTCSessionDescription(msg.offer)).then(function () {
+        phongNapIce(msg.tuId);
+        return pcNhan.createAnswer();
+      }).then(function (ans) { return pcNhan.setLocalDescription(ans); }).then(function () {
+        guiTinHieu({ loaiTin: "phong-tra-loi", phongId: phongHT.id, denId: msg.tuId, answer: pcNhan.localDescription });
+      }).catch(function () {});
+      return;
+    }
+    if (msg.loaiTin === "phong-tra-loi") {
+      var pcTra = phongHT.pcs[msg.tuId];
+      if (pcTra) {
+        pcTra.setRemoteDescription(new RTCSessionDescription(msg.answer)).then(function () { phongNapIce(msg.tuId); }).catch(function () {});
+      }
+      return;
+    }
+    if (msg.loaiTin === "phong-ice") {
+      if (!msg.candidate) return;
+      if (!phongHT.iceCho[msg.tuId]) phongHT.iceCho[msg.tuId] = [];
+      phongHT.iceCho[msg.tuId].push(msg.candidate);
+      phongNapIce(msg.tuId);
+      return;
+    }
+    if (msg.loaiTin === "phong-nguoi-roi") { phongDongPC(msg.id); return; }
+    if (msg.loaiTin === "phong-danh-sach") { phongHT.danhSach = msg.danhSach || []; veThanhVienPhong(); return; }
+    if (msg.loaiTin === "phong-mic") {
+      phongHT.danhSach.forEach(function (tv) {
+        if (tv.id === msg.id) { tv.tatMicTu = msg.tatMicTu; tv.tatMicBoiChu = msg.tatMicBoiChu; }
+      });
+      if (msg.id === phongHT.idCuaToi) {
+        var biChuTat = msg.tatMicBoiChu && !phongHT.tatMicBoiChu;
+        phongHT.tatMicBoiChu = !!msg.tatMicBoiChu;
+        phongHT.tatMicTu = !!msg.tatMicTu;
+        apTrangThaiMicPhong();
+        if (biChuTat) hienToast("👑 Chủ phòng đã tắt mic của bạn.");
+      }
+      veThanhVienPhong();
+      return;
+    }
+    if (msg.loaiTin === "phong-dong") {
+      hienToast("Chủ phòng đã đóng phòng thoại.");
+      roiPhongCucBo();
+      taiPhongThoai();
+      return;
+    }
+  }
+
+  function ganSuKienGoi3() {
+    // Khoảnh khắc
+    $("btnChonAnhKhoanhKhac").addEventListener("click", function () { $("inpAnhKhoanhKhac").click(); });
+    $("inpAnhKhoanhKhac").addEventListener("change", function () {
+      anhKKDangChon = this.files && this.files[0] ? this.files[0] : null;
+      $("tenAnhKhoanhKhac").textContent = anhKKDangChon ? ("Đã chọn: " + anhKKDangChon.name) : "Chưa chọn ảnh (đăng chữ không cũng được)";
+      $("btnBoAnhKhoanhKhac").classList.toggle("an", !anhKKDangChon);
+    });
+    $("btnBoAnhKhoanhKhac").addEventListener("click", function () {
+      anhKKDangChon = null; $("inpAnhKhoanhKhac").value = "";
+      $("tenAnhKhoanhKhac").textContent = "Chưa chọn ảnh (đăng chữ không cũng được)";
+      $("btnBoAnhKhoanhKhac").classList.add("an");
+    });
+    $("btnDangKhoanhKhac").addEventListener("click", dangKhoanhKhac);
+    $("btnHuyDangKhoanhKhac").addEventListener("click", dongHopDangKK);
+    $("btnDongXemKK").addEventListener("click", dongXemKhoanhKhac);
+    $("btnKKTrangTruoc").addEventListener("click", function () { if (xemKK && xemKK.i > 0) { xemKK.i--; veXemKhoanhKhac(); } });
+    $("btnKKTiepTheo").addEventListener("click", function () { if (xemKK && xemKK.i < xemKK.nhom.khoanhKhac.length - 1) { xemKK.i++; veXemKhoanhKhac(); } });
+    $("btnXoaKK").addEventListener("click", function () {
+      if (!xemKK) return;
+      var k = xemKK.nhom.khoanhKhac[xemKK.i];
+      if (!k) return;
+      goiAPI("/api/khoanh-khac/xoa", "POST", { id: k.id }, true).then(function (kq) {
+        if (!kq.ok) { hienToast(kq.loi || "Chưa xóa được khoảnh khắc."); return; }
+        hienToast("Đã xóa khoảnh khắc.");
+        dongXemKhoanhKhac();
+      });
+    });
+    // Điểm danh + đổi điểm
+    $("btnDiemDanh").addEventListener("click", diemDanhHomNay);
+    $("btnDoiSieuThich").addEventListener("click", function () { doiDiemThuong("sieu-thich"); });
+    $("btnDoiBoost").addEventListener("click", function () { doiDiemThuong("boost"); });
+    // Quà trong chat
+    $("btnTangQuaTrongChat").addEventListener("click", function () {
+      if (chatVoi) moChonQua({ sdt: chatVoi.sdt, nick: chatVoi.nick });
+    });
+    $("btnDongChonQua").addEventListener("click", dongChonQua);
+    // Phòng thoại
+    $("btnLamMoiPhong").addEventListener("click", taiPhongThoai);
+    $("btnMoTaoPhong").addEventListener("click", function () { $("hopTaoPhong").classList.remove("an"); $("inpTenPhong").focus(); });
+    $("btnHuyTaoPhong").addEventListener("click", function () { $("hopTaoPhong").classList.add("an"); });
+    $("btnTaoPhong").addEventListener("click", taoPhongThoaiMoi);
+    $("btnRoiPhong").addEventListener("click", roiPhongThoai);
+    $("btnDongPhong").addEventListener("click", function () {
+      if (!phongHT) return;
+      guiTinHieu({ loaiTin: "phong-dong", phongId: phongHT.id });
+      roiPhongCucBo();
+      taiPhongThoai();
+    });
+    $("btnMicPhong").addEventListener("click", function () {
+      if (!phongHT || phongHT.tatMicBoiChu) return;
+      phongHT.tatMicTu = !phongHT.tatMicTu;
+      apTrangThaiMicPhong();
+      guiTinHieu({ loaiTin: "phong-mic-tu", phongId: phongHT.id, tat: phongHT.tatMicTu });
+    });
+  }
+  document.addEventListener("DOMContentLoaded", function () { ganSuKienGoi3(); });
+
+  // ======================================================================
   // ===== V4: KHUNG 5 TAB + TẦNG XÃ HỘI (chỉ bật khi TQD_SERVER có URL) =====
   // ======================================================================
   var CAC_TAB = ["tinnhan", "danhba", "khampha", "tuongnha", "canhan"];
@@ -1434,6 +2042,8 @@ if (typeof document !== "undefined") {
       taiDsChanCaNhan();
       taiTrangThaiVip(); // V4.1
       taiGoiVip();       // V4.1
+      // Gói 3: tab mặc định là Khám phá -> nạp sẵn khoảnh khắc/thông báo/điểm/phòng
+      taiKhoanhKhac(); taiThongBao(); taiDiemThuong(); taiPhongThoai();
     }
     if (!dangNhap) daNapDuLieuXaHoi = false;
   }
@@ -1445,7 +2055,10 @@ if (typeof document !== "undefined") {
     window.scrollTo(0, 0);
     if (!TQD_SERVER || !sdtHienTai) return;
     if (ten === "tinnhan" && !chatVoi) taiDsTroChuyen();
-    if (ten === "khampha") taiTrangThaiGhepDoi(); // Gói 2
+    if (ten === "khampha") { // Gói 2 + Gói 3
+      taiTrangThaiGhepDoi();
+      taiKhoanhKhac(); taiThongBao(); taiDiemThuong(); taiPhongThoai();
+    }
     if (ten === "danhba") { taiLoiMoi(); taiBanBe(); }
     if (ten === "tuongnha") taiBaiDang();
     if (ten === "canhan") { taiCaiDat(); taiDsChanCaNhan(); taiTrangThaiVip(); }
@@ -1941,6 +2554,26 @@ if (typeof document !== "undefined") {
       mt2.className = "metaTep";
       mt2.textContent = dinhDangKichThuoc(t.kichThuocTep) + " — chạm để tải về";
       bong.appendChild(mt2);
+    } else if (kieu === "qua") {
+      // Gói 3: thẻ quà ảo trong chat
+      var theQua = document.createElement("div");
+      theQua.className = "theQuaTrongChat";
+      var eQua = document.createElement("div");
+      eQua.className = "emojiQuaLon";
+      eQua.textContent = t.quaEmoji || "🎁";
+      var tenQua = document.createElement("div");
+      tenQua.className = "tenQuaLon";
+      tenQua.textContent = t.quaTen || "Quà tặng";
+      var ghiChuQua = document.createElement("div");
+      ghiChuQua.className = "metaTep";
+      ghiChuQua.textContent = t.cuaToi ? "Bạn đã tặng món quà này 🎁" : "Đã tặng bạn món quà này 🎁";
+      theQua.appendChild(eQua); theQua.appendChild(tenQua); theQua.appendChild(ghiChuQua);
+      if (t.noiDung) {
+        var loiNhan = document.createElement("div");
+        loiNhan.textContent = "“" + t.noiDung + "”";
+        theQua.appendChild(loiNhan);
+      }
+      bong.appendChild(theQua);
     } else if (t.tepDaXoa || (kieu !== "van-ban" && !t.tepId)) {
       // V5.1: tin media mà tệp đã bị người gửi xóa khỏi máy chủ
       var spXoa = document.createElement("span");
@@ -3504,6 +4137,7 @@ if (typeof document !== "undefined") {
     if (!chatVoi) return;
     if (!TQD_SERVER || !tokenMayChu) { hienToast("Cần đăng nhập qua máy chủ mới gọi được."); return; }
     if (!hoTroGoi()) { hienToast("Trình duyệt này không hỗ trợ gọi thoại/video."); return; }
+    if (phongHT) { hienToast("Bạn đang ở trong phòng thoại — hãy rời phòng trước khi gọi 1-1 nhé."); return; } // Gói 3
     if (goiHT || goiDenCho) { hienToast("Bạn đang có một cuộc gọi khác."); return; }
     ketNoiTinHieu();
     var dich = chatVoi;
@@ -3533,7 +4167,7 @@ if (typeof document !== "undefined") {
   }
 
   function coCuocGoiDen(msg) {
-    if (goiHT || goiDenCho) { // phía client đang bận (máy chủ đã lọc, đây là lớp dự phòng)
+    if (goiHT || goiDenCho || phongHT) { // phía client đang bận (máy chủ đã lọc, đây là lớp dự phòng); Gói 3: đang ở phòng thoại cũng từ chối
       guiTinHieu({ loaiTin: "tu-choi", callId: msg.callId });
       return;
     }
@@ -3592,6 +4226,7 @@ if (typeof document !== "undefined") {
 
   function xuLyTinHieu(msg) {
     if (msg.loaiTin === "dang-ky-ok") return;
+    if (typeof msg.loaiTin === "string" && msg.loaiTin.indexOf("phong-") === 0) { xuLyTinPhong(msg); return; } // Gói 3
     if (msg.loaiTin === "cuoc-goi-den") { coCuocGoiDen(msg); return; }
     if (msg.loaiTin === "dang-do-chuong") {
       if (goiHT && goiHT.vaiTro === "goi-di") {

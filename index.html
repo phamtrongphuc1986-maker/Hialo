@@ -673,6 +673,33 @@ try {
   <!-- ===== TAB KHÁM PHÁ: tìm quanh đây (v3) + lưới tiện ích (v4) ===== -->
   <div id="tabKhamPha" class="tabNoiDung">
 
+  <!-- ===== GÓI 3: KHOẢNH KHẮC 24H ===== -->
+  <section class="the" id="mucKhoanhKhac">
+    <h2>📸 Khoảnh khắc <span class="moTa">(tự biến mất sau 24 giờ)</span></h2>
+    <div id="hangKhoanhKhac" class="hangKhoanhKhac"></div>
+    <p class="goiY an" id="trongKhoanhKhac">Chưa có khoảnh khắc nào. Đăng ảnh hoặc đôi dòng để bạn bè và người quanh đây thấy bạn hôm nay nhé.</p>
+    <div id="hopDangKhoanhKhac" class="an">
+      <input type="file" id="inpAnhKhoanhKhac" accept="image/*" class="an">
+      <p class="moTa" id="tenAnhKhoanhKhac">Chưa chọn ảnh (đăng chữ không cũng được)</p>
+      <div class="hangHaiNut">
+        <button type="button" id="btnChonAnhKhoanhKhac" class="nutPhu nho">🖼 Chọn ảnh</button>
+        <button type="button" id="btnBoAnhKhoanhKhac" class="nutPhu nho an">✕ Bỏ ảnh</button>
+      </div>
+      <textarea id="inpChuKhoanhKhac" maxlength="200" rows="2" placeholder="Viết đôi dòng cho khoảnh khắc này…" style="width:100%;margin-top:8px"></textarea>
+      <div class="hangHaiNut">
+        <button type="button" id="btnDangKhoanhKhac" class="nutChinh nho">📸 Đăng khoảnh khắc</button>
+        <button type="button" id="btnHuyDangKhoanhKhac" class="nutPhu nho">Hủy</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== GÓI 3: THÔNG BÁO ===== -->
+  <section class="the" id="mucThongBao">
+    <h2>🔔 Thông báo <span id="huySoThongBao" class="huyBadge an">0</span></h2>
+    <div id="dsThongBao" class="danhSach"></div>
+    <p class="goiY an" id="trongThongBao">Chưa có thông báo nào.</p>
+  </section>
+
   <!-- ===== ĐỊNH VỊ + BỘ LỌC ===== -->
   <section class="the">
     <h2>🔎 Tìm quanh đây</h2>
@@ -831,6 +858,44 @@ try {
     <p class="goiY an" id="trongGhepDoi">Chưa có ghép đôi nào. Thích một hồ sơ — nếu họ cũng thích bạn, hai người sẽ được ghép đôi và nhắn tin được ngay.</p>
   </section>
 
+  <!-- ===== GÓI 3: ĐIỂM DANH + ĐIỂM THƯỞNG + QUÀ ẢO ===== -->
+  <section class="the" id="mucDiemThuong">
+    <h2>🎁 Điểm danh &amp; quà tặng</h2>
+    <p class="moTa" id="txtTrangThaiDiem">Đang tải điểm thưởng…</p>
+    <div class="hangHaiNut">
+      <button type="button" id="btnDiemDanh" class="nutChinh nho">✅ Điểm danh hôm nay (+10 điểm)</button>
+    </div>
+    <div class="hangHaiNut">
+      <button type="button" id="btnDoiSieuThich" class="nutPhu nho">Đổi +1 Siêu thích (30 điểm)</button>
+      <button type="button" id="btnDoiBoost" class="nutPhu nho">Đổi +1 Boost (100 điểm)</button>
+    </div>
+    <p class="moTa" id="txtLuotThem"></p>
+    <p class="nhan">🎁 Quà bạn đã nhận: <strong id="txtTongQuaNhan">0</strong></p>
+    <div id="dsQuaGanDay" class="danhSach"></div>
+  </section>
+
+  <!-- ===== GÓI 3: PHÒNG THOẠI THEO KHU VỰC ===== -->
+  <section class="the" id="mucPhongThoai">
+    <h2>🎙️ Phòng thoại quanh bạn</h2>
+    <p class="moTa">Trò chuyện bằng giọng nói với mọi người cùng khu vực (tối đa 8 người nói/phòng). Phòng xếp theo thành phố gần bạn nhất.</p>
+    <div id="dsPhongThoai" class="danhSach"></div>
+    <p class="goiY an" id="trongPhongThoai">Chưa có phòng thoại nào đang mở. Tạo phòng đầu tiên nhé!</p>
+    <div class="hangHaiNut">
+      <button type="button" id="btnLamMoiPhong" class="nutPhu nho">🔄 Làm mới</button>
+      <button type="button" id="btnMoTaoPhong" class="nutChinh nho">➕ Tạo phòng thoại</button>
+    </div>
+    <div id="hopTaoPhong" class="an">
+      <label class="nhan" for="inpTenPhong">Tên phòng</label>
+      <input id="inpTenPhong" type="text" maxlength="60" placeholder="Ví dụ: Cà phê tối Hải Phòng">
+      <label class="nhan" for="inpChuDePhong">Chủ đề</label>
+      <input id="inpChuDePhong" type="text" maxlength="80" placeholder="Ví dụ: tám chuyện cuối tuần">
+      <div class="hangHaiNut">
+        <button type="button" id="btnTaoPhong" class="nutChinh nho">🎙️ Tạo &amp; vào phòng</button>
+        <button type="button" id="btnHuyTaoPhong" class="nutPhu nho">Hủy</button>
+      </div>
+    </div>
+  </section>
+
   <!-- ===== V4: LƯỚI TIỆN ÍCH (chỉ chế độ máy chủ) ===== -->
   <section class="the" id="mucTienIch">
     <h2>🧭 Tiện ích</h2>
@@ -944,6 +1009,7 @@ try {
         <button type="button" id="btnChonAnh" class="nutPhu nho nutMedia" title="Gửi ảnh">📷</button>
         <button type="button" id="btnChonTep" class="nutPhu nho nutMedia" title="Gửi tệp hoặc video (tối đa 200 MB)">📎</button>
         <button type="button" id="btnGhiAm" class="nutPhu nho nutMedia" title="Ghi âm tin nhắn thoại">🎤</button>
+        <button type="button" id="btnTangQuaTrongChat" class="nutPhu nho nutMedia" title="Tặng quà bằng điểm thưởng">🎁</button>
         <input id="inpTinNhan" type="text" maxlength="1000" placeholder="Nhập tin nhắn…" autocomplete="off">
         <button type="button" id="btnGuiTin" class="nutChinh nutGuiTin">Gửi ➤</button>
       </div>
@@ -1101,6 +1167,55 @@ try {
 </div>
 
 <!-- ===== V5: MÀN HÌNH ĐANG GỌI ===== -->
+<!-- ===== GÓI 3: MÀN XEM KHOẢNH KHẮC ===== -->
+<div id="manXemKhoanhKhac" class="lopPhuKK an" role="dialog" aria-label="Xem khoảnh khắc">
+  <div class="hopXemKK">
+    <div class="dauChat">
+      <span id="avatarXemKK" class="avatarChat">😀</span>
+      <div class="thongTinNguoi">
+        <p class="tenNguoi" id="tenXemKK"></p>
+        <p class="chiTietNguoi" id="gioXemKK"></p>
+      </div>
+      <button type="button" id="btnDongXemKK" class="nutPhu nho">✕ Đóng</button>
+    </div>
+    <img id="anhXemKK" class="anhXemKK an" alt="Ảnh khoảnh khắc">
+    <p id="chuXemKK" class="chuXemKK"></p>
+    <div class="hangHaiNut">
+      <button type="button" id="btnKKTrangTruoc" class="nutPhu nho">← Trước</button>
+      <button type="button" id="btnKKTiepTheo" class="nutPhu nho">Tiếp →</button>
+    </div>
+    <p class="moTa an" id="txtNguoiXemKK"></p>
+    <div id="dsNguoiXemKK" class="danhSach"></div>
+    <button type="button" id="btnXoaKK" class="nutPhu nho nutDangXuat an">🗑 Xóa khoảnh khắc này</button>
+  </div>
+</div>
+
+<!-- ===== GÓI 3: MÀN TRONG PHÒNG THOẠI ===== -->
+<div id="manPhongThoai" class="lopPhuKK an" role="dialog" aria-label="Phòng thoại">
+  <div class="hopXemKK">
+    <p class="tenNguoi" id="tenPhongDangO"></p>
+    <p class="chiTietNguoi" id="chuDePhongDangO"></p>
+    <div id="dsThanhVienPhong" class="danhSach"></div>
+    <div class="hangBaNut">
+      <button type="button" id="btnMicPhong" class="nutChinh">🎤 Mic đang bật</button>
+      <button type="button" id="btnRoiPhong" class="nutPhu">🚪 Rời phòng</button>
+      <button type="button" id="btnDongPhong" class="nutPhu nutDangXuat an">❌ Đóng phòng</button>
+    </div>
+    <p class="loi" id="loiPhong"></p>
+  </div>
+</div>
+
+<!-- ===== GÓI 3: HỘP CHỌN QUÀ TẶNG ===== -->
+<div id="hopChonQua" class="lopPhuKK an" role="dialog" aria-label="Tặng quà">
+  <div class="hopXemKK">
+    <p class="tenNguoi">🎁 Tặng quà cho <span id="tenNguoiNhanQua"></span></p>
+    <p class="moTa">Số dư điểm của bạn: <strong id="txtDiemKhiTangQua">0</strong> điểm (quà mua bằng điểm thưởng, không tốn tiền)</p>
+    <div id="luoiQua" class="luoiQua"></div>
+    <input id="inpLoiNhanQua" type="text" maxlength="200" placeholder="Lời nhắn kèm quà (không bắt buộc)" style="width:100%;margin:8px 0">
+    <button type="button" id="btnDongChonQua" class="nutPhu nho">Đóng</button>
+  </div>
+</div>
+
 <div id="manGoi" class="lopPhuGoi manGoi an" role="dialog" aria-label="Đang gọi">
   <video id="videoXa" class="videoXa" autoplay playsinline></video>
   <div id="avatarDangGoi" class="avatarGoiLon avatarDangGoi an">😀</div>
