@@ -393,6 +393,13 @@ try {
           <p class="giaiThich">Bật: người chưa kết bạn cũng gọi thoại / gọi video cho bạn được. Tắt: chỉ bạn bè mới gọi được.</p>
         </div>
         <div class="congTac">
+          <label class="hangCongTac" for="chkHienDaXem">
+            <input type="checkbox" id="chkHienDaXem" checked>
+            <span><strong>Hiện trạng thái "Đã xem" trong trò chuyện</strong></span>
+          </label>
+          <p class="giaiThich">Bật: người trò chuyện với bạn thấy khi bạn đã xem tin của họ, và bạn cũng thấy khi họ đã xem tin của bạn. Tắt: cả hai phía cùng không hiện nữa (theo thông lệ WhatsApp).</p>
+        </div>
+        <div class="congTac">
           <label class="hangCongTac" for="chkTuongChiBanBeRt">
             <input type="checkbox" id="chkTuongChiBanBeRt" checked>
             <span><strong>Chỉ bạn bè xem được tường nhà của tôi</strong></span>
@@ -1000,6 +1007,7 @@ try {
         <button type="button" id="btnChanTrongChat" class="nutPhu nho nutDangXuat">🚫 Chặn</button>
       </div>
       <div id="hopTinNhan" class="hopTinNhan"></div>
+      <div id="dongDangNhap" class="dongDangNhap an"></div>
       <div id="hopTaiLen" class="hopTaiLen an">
         <div class="thanhNenTaiLen"><div id="thanhTienTrinh"></div></div>
         <span id="nhanTaiLen">Đang tải lên…</span>
@@ -1010,9 +1018,18 @@ try {
         <button type="button" id="btnChonTep" class="nutPhu nho nutMedia" title="Gửi tệp hoặc video (tối đa 200 MB)">📎</button>
         <button type="button" id="btnGhiAm" class="nutPhu nho nutMedia" title="Ghi âm tin nhắn thoại">🎤</button>
         <button type="button" id="btnTangQuaTrongChat" class="nutPhu nho nutMedia" title="Tặng quà bằng điểm thưởng">🎁</button>
+        <button type="button" id="btnSticker" class="nutPhu nho nutMedia" title="Gửi sticker">😀</button>
+        <select id="selTuHuy" class="selTuHuy" title="Tin tự huỷ — hết giờ sau khi người nhận xem, tin sẽ biến mất ở cả hai phía">
+          <option value="0">⏳ Tự huỷ: Tắt</option>
+          <option value="10">💨 10 giây</option>
+          <option value="60">💨 1 phút</option>
+          <option value="3600">💨 1 giờ</option>
+        </select>
         <input id="inpTinNhan" type="text" maxlength="1000" placeholder="Nhập tin nhắn…" autocomplete="off">
         <button type="button" id="btnGuiTin" class="nutChinh nutGuiTin">Gửi ➤</button>
       </div>
+      <p class="goiY an" id="goiYTuHuy">💨 Tin tự huỷ sẽ biến mất ở cả hai phía sau khi người nhận xem — nhưng chỉ ở mức ứng dụng, người nhận vẫn có thể chụp màn hình trước khi tin biến mất.</p>
+      <div id="hopSticker" class="hopSticker an"></div>
       <div id="hopGhiAm" class="hopGhiAm an">
         <span id="nhanGhiAm" class="nhanGhiAm">🎤 Bản ghi âm</span>
         <audio id="audioXemTruoc" class="audioXemTruoc" controls></audio>
@@ -1037,9 +1054,11 @@ try {
       </div>
       <div id="hopTinNhanNhom" class="hopTinNhan"></div>
       <div class="hangNhapChat">
+        <button type="button" id="btnStickerNhom" class="nutPhu nho nutMedia" title="Gửi sticker vào nhóm">😀</button>
         <input id="inpTinNhanNhom" type="text" maxlength="1000" placeholder="Nhắn tin tới nhóm…" autocomplete="off">
         <button type="button" id="btnGuiTinNhom" class="nutChinh nutGuiTin">Gửi ➤</button>
       </div>
+      <div id="hopStickerNhom" class="hopSticker an"></div>
       <p class="loi" id="loiChatNhom"></p>
     </section>
 

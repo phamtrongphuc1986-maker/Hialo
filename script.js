@@ -2008,6 +2008,7 @@ if (typeof document !== "undefined") {
   var hetPhienVuaXayRa = false;   // V7.1: co bao vua bi may chu cat phien (401)
   var chatVoi = null;                // { sdt, nick, emoji } đang trò chuyện
   var chatSince = 0;                 // mốc tg tin nhắn mới nhất đã hiện trong màn chat
+  var chatSuaSince = 0;              // Gói 4: mốc suaLuc đã đồng bộ (tin bị thu hồi / tự huỷ)
   var idPollChat = null;             // interval tự làm mới chat mỗi 3 giây
   var daNapDuLieuXaHoi = false;      // đã tải cài đặt + danh sách chặn cho lần đăng nhập này chưa
 
@@ -2402,7 +2403,10 @@ if (typeof document !== "undefined") {
           var xemTruocN = "";
           if (g.tinCuoi) {
             var nguoiGuiCuoi = (sdtHienTai && g.tinCuoi.tu === sdtHienTai) ? "Bạn" : (g.tinCuoi.nick || "Ai đó");
-            xemTruocN = nguoiGuiCuoi + ": " + g.tinCuoi.noiDung;
+            // Gói 4: xem trước tin nhóm đã thu hồi / sticker
+            var ndCuoiN = g.tinCuoi.daThuHoi ? "↩️ Tin nhắn đã được thu hồi"
+              : (g.tinCuoi.kieu === "sticker" ? ((g.tinCuoi.noiDung || "🌟") + " Sticker") : g.tinCuoi.noiDung);
+            xemTruocN = nguoiGuiCuoi + ": " + ndCuoiN;
           } else {
             xemTruocN = "Nhóm mới — hãy gửi tin đầu tiên 👋";
           }
@@ -2426,6 +2430,11 @@ if (typeof document !== "undefined") {
     chatVoi = { sdt: sdt, nick: nick || "", emoji: emoji || "😀",
       laBanBe: !!(tuyChon && tuyChon.laBanBe), xacThuc: !!(tuyChon && tuyChon.xacThuc) };
     chatSince = 0;
+    chatSuaSince = 0; // Gói 4
+    chatDaXemDen = 0; chatToiHienDaXem = true; // Gói 4
+    anDongDangNhap();
+    var hopSt = $("hopSticker"); if (hopSt) hopSt.classList.add("an");
+    chayDemTuHuy(); // Gói 4: đồng hồ đếm ngược tin tự huỷ đang hiện
     tabDangChon = "tinnhan";
     capNhatKhungTab();
     $("khuDsTroChuyen").classList.add("an");
@@ -2454,9 +2463,12 @@ if (typeof document !== "undefined") {
   function dongManChat(napLaiDs) {
     dungPollChat();
     dungPollChatNhom(); // V6: dừng poll nhóm khi rời tab Tin nhắn
+    dungDemTuHuy(); // Gói 4
+    anDongDangNhap(); // Gói 4
     nhomDangChat = null;
     chatVoi = null;
     chatSince = 0;
+    chatSuaSince = 0;
     var mc = $("manChat");
     if (mc) mc.classList.add("an");
     // V6: các màn nhóm cũng quay về danh sách
@@ -2473,24 +2485,55 @@ if (typeof document !== "undefined") {
   function taiTinNhanMoi() {
     if (!chatVoi || !tokenMayChu) return;
     var dich = chatVoi.sdt;
-    goiAPI("/api/tin-nhan?sdt=" + encodeURIComponent(dich) + "&since=" + chatSince, "GET", null, true)
+    goiAPI("/api/tin-nhan?sdt=" + encodeURIComponent(dich) + "&since=" + chatSince + "&sinceSua=" + chatSuaSince, "GET", null, true)
       .then(function (kq) {
         if (!kq.ok || !chatVoi || chatVoi.sdt !== dich) return;
         (kq.tinNhan || []).forEach(function (t) {
           themBongBong(t);
           if (t.tg > chatSince) chatSince = t.tg;
         });
+        // Gói 4: vá tại chỗ các tin cũ đã thay đổi (thu hồi / bắt đầu đếm tự huỷ / đã tự huỷ)
+        (kq.tinCapNhat || []).forEach(function (t) {
+          capNhatBongBong(t);
+          if (t.suaLuc && t.suaLuc > chatSuaSince) chatSuaSince = t.suaLuc;
+        });
+        // Gói 4: trạng thái "Đã xem" của đối phương
+        if (typeof kq.daXemDen === "number") {
+          chatDaXemDen = kq.daXemDen;
+          chatToiHienDaXem = kq.toiHienDaXem !== false;
+          capNhatChiThiDaXem();
+        }
       });
   }
 
-  function themBongBong(t) {
-    var hop = $("hopTinNhan");
+  // Gói 4: tạo MỘT dòng tin hoàn chỉnh — dùng cho cả thêm mới lẫn vá tại chỗ khi
+  // tin bị thu hồi / bắt đầu đếm tự huỷ / đã tự huỷ (máy chủ báo qua tinCapNhat).
+  function taoDongTin(t) {
     var dong = document.createElement("div");
     dong.className = "dongTin " + (t.cuaToi ? "cuaToi" : "cuaHo");
+    if (t.id) dong.dataset.tinId = t.id;
+    dong.dataset.tg = t.tg || 0;
     var bong = document.createElement("div");
     bong.className = "bongBong";
     var kieu = t.kieu || "van-ban";
-    if (kieu === "anh" && t.tepId) {
+    if (t.daThuHoi) {
+      var spThuHoi = document.createElement("span");
+      spThuHoi.className = "tinBiThuHoi";
+      spThuHoi.textContent = "↩️ Tin nhắn đã được thu hồi";
+      bong.appendChild(spThuHoi);
+    } else if (t.daHetHan) {
+      var spHetHan = document.createElement("span");
+      spHetHan.className = "tinBiThuHoi";
+      spHetHan.textContent = "💨 Tin nhắn đã tự huỷ";
+      bong.appendChild(spHetHan);
+    } else if (kieu === "sticker") {
+      // Gói 4: sticker hiển thị to
+      bong.classList.add("bongSticker");
+      var stLon = document.createElement("div");
+      stLon.className = "stickerTrongChat";
+      stLon.textContent = t.noiDung || "🌟";
+      bong.appendChild(stLon);
+    } else if (kieu === "anh" && t.tepId) {
       // V5: tin ảnh — bấm vào mở ảnh lớn
       var img = document.createElement("img");
       img.className = "anhTrongChat";
@@ -2587,9 +2630,22 @@ if (typeof document !== "undefined") {
     gio.className = "gioTin";
     gio.textContent = dinhDangGio(t.tg);
     bong.appendChild(gio);
+    // Gói 4: nhãn tin tự huỷ (chưa đếm ngược / đang đếm ngược theo hetLuc)
+    if (t.tuHuy && !t.daThuHoi && !t.daHetHan) {
+      var nhanTuHuy = document.createElement("div");
+      nhanTuHuy.className = "nhanTuHuy";
+      if (t.hetLuc) {
+        nhanTuHuy.dataset.hetLuc = t.hetLuc;
+        nhanTuHuy.textContent = "💨 Sẽ tự huỷ sau " + nhanDemNguoc((t.hetLuc - Date.now()) / 1000);
+      } else {
+        nhanTuHuy.textContent = "⏳ Tự huỷ " + nhanThoiGianTuHuy(t.tuHuy) + " sau khi người nhận xem";
+      }
+      bong.appendChild(nhanTuHuy);
+    }
     dong.appendChild(bong);
     // V5.1: nút Lưu dưới mỗi tin -> cất snapshot vào "Tài liệu của tôi"
-    if (TQD_SERVER && tokenMayChu) {
+    // Gói 4: tin đã thu hồi / đã tự huỷ thì không còn nội dung để lưu, dịch hay thu hồi nữa.
+    if (TQD_SERVER && tokenMayChu && !t.daThuHoi && !t.daHetHan) {
       var nutLuu = document.createElement("button");
       nutLuu.type = "button";
       nutLuu.className = "nutLuuTin";
@@ -2597,9 +2653,274 @@ if (typeof document !== "undefined") {
       nutLuu.title = "Lưu vào Tài liệu của tôi";
       nutLuu.addEventListener("click", function () { luuTinNhanVaoTaiLieu(t); });
       dong.appendChild(nutLuu);
+      if (kieu === "van-ban" && t.noiDung) {
+        var nutDich = document.createElement("button");
+        nutDich.type = "button";
+        nutDich.className = "nutLuuTin";
+        nutDich.textContent = "🌐 Dịch";
+        nutDich.title = "Dịch tin nhắn này";
+        nutDich.addEventListener("click", function () { dichTinNhan(t, dong); });
+        dong.appendChild(nutDich);
+      }
+      if (t.cuaToi && t.id && (Date.now() - t.tg) < 86400000) {
+        var nutThuHoi = document.createElement("button");
+        nutThuHoi.type = "button";
+        nutThuHoi.className = "nutLuuTin";
+        nutThuHoi.textContent = "↩ Thu hồi";
+        nutThuHoi.title = "Thu hồi tin nhắn này ở cả hai phía (trong 24 giờ đầu)";
+        nutThuHoi.addEventListener("click", function () { thuHoiTinChat(t); });
+        dong.appendChild(nutThuHoi);
+      }
     }
-    hop.appendChild(dong);
+    dong._tin = t;
+    return dong;
+  }
+
+  function themBongBong(t) {
+    var hop = $("hopTinNhan");
+    hop.appendChild(taoDongTin(t));
     hop.scrollTop = hop.scrollHeight;
+  }
+
+  // Gói 4: thay một dòng tin đã hiện bằng bản mới nhất từ máy chủ (theo id).
+  function capNhatBongBong(t) {
+    if (!t || !t.id) return;
+    var hop = $("hopTinNhan");
+    if (!hop) return;
+    var cu = null;
+    hop.querySelectorAll(".dongTin").forEach(function (d) { if (d.dataset.tinId === t.id) cu = d; });
+    if (!cu) { themBongBong(t); return; }
+    cu.replaceWith(taoDongTin(t));
+    capNhatChiThiDaXem();
+  }
+
+  // ================= GÓI 4: DỊCH / THU HỒI / ĐÃ XEM / ĐANG NHẬP / TỰ HUỶ / STICKER =================
+  var chatDaXemDen = 0;         // mốc thời gian đối phương đã đọc tới (ms)
+  var chatToiHienDaXem = true;  // cài đặt hienDaXem của chính mình (tắt = ẩn hai chiều)
+  var idDemTuHuy = null;
+  var lucGuiDangNhapCuoi = 0;
+  var henAnDangNhap = null;
+
+  function nhanThoiGianTuHuy(giay) {
+    return giay >= 3600 ? "1 giờ" : (giay >= 60 ? "1 phút" : (giay + " giây"));
+  }
+  function nhanDemNguoc(giayTho) {
+    var g = Math.max(0, Math.ceil(giayTho));
+    return g > 90 ? (Math.ceil(g / 60) + " phút") : (g + " giây");
+  }
+
+  // Chỉ thị "✓✓ Đã xem" nằm ngay dưới tin cuối cùng của mình đã được đối phương đọc.
+  function capNhatChiThiDaXem() {
+    var hop = $("hopTinNhan");
+    if (!hop || !chatVoi) return;
+    var cu = $("dongDaXemChat");
+    if (cu) cu.remove();
+    if (!chatToiHienDaXem || !chatDaXemDen) return;
+    var dongCuoi = null;
+    hop.querySelectorAll(".dongTin.cuaToi").forEach(function (d) {
+      if ((parseInt(d.dataset.tg, 10) || 0) <= chatDaXemDen) dongCuoi = d;
+    });
+    if (!dongCuoi) return;
+    var dv = document.createElement("div");
+    dv.id = "dongDaXemChat";
+    dv.className = "dongDaXem";
+    dv.textContent = "✓✓ Đã xem " + dinhDangGio(chatDaXemDen);
+    dongCuoi.after(dv);
+  }
+
+  // Đếm ngược tại máy người xem: hết giờ là ẩn nội dung ngay (máy chủ cũng xóa
+  // nội dung ở lần đọc kế tiếp — hai lớp cùng chạy).
+  function chayDemTuHuy() {
+    dungDemTuHuy();
+    idDemTuHuy = setInterval(function () {
+      if (!chatVoi) return;
+      var bayGio = Date.now();
+      document.querySelectorAll("#hopTinNhan .nhanTuHuy[data-het-luc]").forEach(function (el) {
+        var hetLuc = parseInt(el.dataset.hetLuc, 10) || 0;
+        if (hetLuc - bayGio <= 0) {
+          var dong = el.closest(".dongTin");
+          if (dong && dong._tin) {
+            var t2 = Object.assign({}, dong._tin, { daHetHan: true, noiDung: "", tepId: null });
+            dong.replaceWith(taoDongTin(t2));
+          }
+        } else {
+          el.textContent = "💨 Sẽ tự huỷ sau " + nhanDemNguoc((hetLuc - bayGio) / 1000);
+        }
+      });
+    }, 500);
+  }
+  function dungDemTuHuy() {
+    if (idDemTuHuy) { clearInterval(idDemTuHuy); idDemTuHuy = null; }
+  }
+
+  // Dịch tin: bấm lần 1 hiện bản dịch ngay dưới bong bóng, bấm lần nữa thì ẩn.
+  function dichTinNhan(t, dong) {
+    var co = dong.querySelector(".banDich");
+    if (co) { co.remove(); return; }
+    hienToast("Đang dịch… 🌐");
+    goiAPI("/api/dich", "POST", { vanBan: t.noiDung }, true).then(function (kq) {
+      if (!kq.ok) { hienToast(kq.loi || "Chưa dịch được lúc này."); return; }
+      var dv = document.createElement("div");
+      dv.className = "banDich";
+      var nd = document.createElement("div");
+      nd.textContent = kq.dich || "";
+      var nguon = document.createElement("div");
+      nguon.className = "metaTep";
+      nguon.textContent = "🌐 Bản dịch (" + (kq.dichSang === "en" ? "tiếng Anh" : "tiếng Việt") + ") · " + (kq.nguon || "");
+      dv.appendChild(nd);
+      dv.appendChild(nguon);
+      dong.appendChild(dv);
+    });
+  }
+
+  function thuHoiTinChat(t) {
+    if (!window.confirm("Thu hồi tin nhắn này?\n\nNội dung sẽ biến mất ở cả hai phía.")) return;
+    goiAPI("/api/tin-nhan/thu-hoi", "POST", { id: t.id }, true).then(function (kq) {
+      if (!kq.ok) { hienToast(kq.loi || "Chưa thu hồi được."); return; }
+      if (kq.tin) capNhatBongBong(kq.tin);
+      hienToast("Đã thu hồi tin nhắn ↩️");
+    });
+  }
+
+  function thuHoiTinNhom(t) {
+    if (!nhomDangChat) return;
+    if (!window.confirm("Thu hồi tin nhắn này khỏi nhóm?\n\nNội dung sẽ biến mất với mọi thành viên.")) return;
+    var idNhom = nhomDangChat.id;
+    goiAPI("/api/nhom/tin-nhan/thu-hoi", "POST", { nhom: idNhom, id: t.id }, true).then(function (kq) {
+      if (!kq.ok) { hienToast(kq.loi || "Chưa thu hồi được."); return; }
+      if (kq.tin && nhomDangChat && nhomDangChat.id === idNhom) capNhatBongBongNhom(kq.tin);
+      hienToast("Đã thu hồi tin nhắn ↩️");
+    });
+  }
+
+  // Đang nhập: gửi tín hiệu WS tối đa 1 lần / 2,5 giây khi gõ trong ô chat.
+  function baoDangNhap() {
+    if (!chatVoi) return;
+    var bayGio = Date.now();
+    if (bayGio - lucGuiDangNhapCuoi < 2500) return;
+    lucGuiDangNhapCuoi = bayGio;
+    guiTinHieu({ loaiTin: "dang-nhap", den: chatVoi.sdt });
+  }
+  function nhanTinDangNhap(msg) {
+    if (!chatVoi || msg.tu !== chatVoi.sdt) return;
+    var el = $("dongDangNhap");
+    if (!el) return;
+    el.textContent = "✍️ " + (chatVoi.nick || "Đối phương") + " đang nhập…";
+    el.classList.remove("an");
+    if (henAnDangNhap) clearTimeout(henAnDangNhap);
+    henAnDangNhap = setTimeout(anDongDangNhap, 3500);
+  }
+  function anDongDangNhap() {
+    var el = $("dongDangNhap");
+    if (el) el.classList.add("an");
+  }
+
+  function layTuHuyDangChon() {
+    var s = $("selTuHuy");
+    return s ? (parseInt(s.value, 10) || 0) : 0;
+  }
+
+  // ---------- Gói 4: STICKER (danh mục lấy từ máy chủ, có bộ dự phòng gọn) ----------
+  var boStickerHT = null;
+  var boStickerDangChon = {};
+  var STICKER_DU_PHONG = [
+    { id: "cam-xuc", ten: "😀 Cảm xúc", muc: [
+      { id: "cx-cuoi", emoji: "😂", nhan: "Cười ngất" }, { id: "cx-yeu", emoji: "🥰", nhan: "Yêu quá" },
+      { id: "cx-tim", emoji: "😍", nhan: "Mê luôn" }, { id: "cx-ngau", emoji: "😎", nhan: "Ngầu" },
+      { id: "tc-tim", emoji: "❤️", nhan: "Trái tim" }, { id: "ch-chao", emoji: "👋", nhan: "Xin chào" },
+      { id: "ch-like", emoji: "👍", nhan: "Chuẩn" }, { id: "ch-lua", emoji: "🔥", nhan: "Cháy" }
+    ] }
+  ];
+  function taiBoSticker() {
+    if (boStickerHT || !TQD_SERVER || !tokenMayChu) return;
+    goiAPI("/api/sticker", "GET", null, true).then(function (kq) {
+      if (kq.ok && Array.isArray(kq.bo) && kq.bo.length) boStickerHT = kq.bo;
+    });
+  }
+  function veHopSticker(idHop, nguCanh) {
+    var hop = $(idHop);
+    if (!hop) return;
+    var bo = boStickerHT || STICKER_DU_PHONG;
+    var dangChon = boStickerDangChon[idHop] || bo[0].id;
+    hop.innerHTML = "";
+    var hangTab = document.createElement("div");
+    hangTab.className = "hangTabSticker";
+    bo.forEach(function (b) {
+      var tab = document.createElement("button");
+      tab.type = "button";
+      tab.className = "tabSticker" + (b.id === dangChon ? " dangChon" : "");
+      tab.textContent = b.ten;
+      tab.addEventListener("click", function () {
+        boStickerDangChon[idHop] = b.id;
+        veHopSticker(idHop, nguCanh);
+      });
+      hangTab.appendChild(tab);
+    });
+    hop.appendChild(hangTab);
+    var boHT = null;
+    bo.forEach(function (b) { if (b.id === dangChon) boHT = b; });
+    if (!boHT) boHT = bo[0];
+    var luoi = document.createElement("div");
+    luoi.className = "luoiSticker";
+    (boHT.muc || []).forEach(function (m) {
+      var o = document.createElement("button");
+      o.type = "button";
+      o.className = "oSticker";
+      o.title = m.nhan;
+      var em = document.createElement("span");
+      em.className = "emojiSticker";
+      em.textContent = m.emoji;
+      var nhan = document.createElement("span");
+      nhan.className = "nhanSticker";
+      nhan.textContent = m.nhan;
+      o.appendChild(em);
+      o.appendChild(nhan);
+      o.addEventListener("click", function () { guiStickerTheoNguCanh(nguCanh, m.id); });
+      luoi.appendChild(o);
+    });
+    hop.appendChild(luoi);
+  }
+  function moHopSticker1v1() {
+    var hop = $("hopSticker");
+    if (!hop) return;
+    var seMo = hop.classList.contains("an");
+    hop.classList.toggle("an", !seMo);
+    if (seMo) { taiBoSticker(); veHopSticker("hopSticker", "1v1"); }
+  }
+  function moHopStickerNhom() {
+    var hop = $("hopStickerNhom");
+    if (!hop) return;
+    var seMo = hop.classList.contains("an");
+    hop.classList.toggle("an", !seMo);
+    if (seMo) { taiBoSticker(); veHopSticker("hopStickerNhom", "nhom"); }
+  }
+  function guiStickerTheoNguCanh(nguCanh, stickerId) {
+    if (nguCanh === "nhom") {
+      if (!nhomDangChat) return;
+      var idNhom = nhomDangChat.id;
+      goiAPI("/api/nhom/tin-nhan/sticker", "POST", { nhom: idNhom, stickerId: stickerId }, true).then(function (kq) {
+        if (!kq.ok) { $("loiChatNhom").textContent = kq.loi || "Không gửi được sticker."; return; }
+        $("loiChatNhom").textContent = "";
+        var hopN = $("hopStickerNhom"); if (hopN) hopN.classList.add("an");
+        if (nhomDangChat && nhomDangChat.id === idNhom && kq.tin) {
+          themBongBongNhom(kq.tin);
+          if (kq.tin.tg > nhomChatSince) nhomChatSince = kq.tin.tg;
+        }
+      });
+      return;
+    }
+    if (!chatVoi) return;
+    var dich = chatVoi;
+    goiAPI("/api/tin-nhan/sticker", "POST", { sdt: dich.sdt, stickerId: stickerId, tuHuy: layTuHuyDangChon() }, true).then(function (kq) {
+      if (!kq.ok) { $("loiChat").textContent = kq.loi || "Không gửi được sticker."; return; }
+      $("loiChat").textContent = "";
+      var hopS = $("hopSticker"); if (hopS) hopS.classList.add("an");
+      if (chatVoi && chatVoi.sdt === dich.sdt && kq.tin) {
+        themBongBong(kq.tin);
+        if (kq.tin.tg > chatSince) chatSince = kq.tin.tg;
+      }
+      if (kq.dangCho) hienToast("Sticker đã gửi vào hộp Tin nhắn chờ của " + (dich.nick || "người ấy") + " 📥");
+    });
   }
 
   function guiTinSuKien() {
@@ -2607,7 +2928,7 @@ if (typeof document !== "undefined") {
     var noiDung = $("inpTinNhan").value.trim();
     if (!noiDung) return;
     var dich = chatVoi;
-    goiAPI("/api/tin-nhan", "POST", { sdt: dich.sdt, noiDung: noiDung }, true).then(function (kq) {
+    goiAPI("/api/tin-nhan", "POST", { sdt: dich.sdt, noiDung: noiDung, tuHuy: layTuHuyDangChon() }, true).then(function (kq) {
       if (!kq.ok) {
         // Gửi bị từ chối (ví dụ bị chặn): hiện ĐÚNG câu lỗi từ máy chủ
         $("loiChat").textContent = kq.loi || "Không gửi được tin nhắn.";
@@ -2640,6 +2961,7 @@ if (typeof document !== "undefined") {
   // tài khoản thường 0, VIP 10) nâng cấp một chiều lên Cộng đồng tối đa 1000.
   var nhomDangChat = null;      // bản tóm tắt nhóm đang mở (từ danh sách / chi tiết)
   var nhomChatSince = 0;
+  var nhomSuaSince = 0; // Gói 4: mốc suaLuc đã đồng bộ trong nhóm (thu hồi)
   var idPollChatNhom = null;
   var nhomThongTin = null;      // chi tiết đầy đủ của nhóm ở màn Thông tin nhóm
 
@@ -2665,6 +2987,8 @@ if (typeof document !== "undefined") {
   function moChatNhom(g) {
     nhomDangChat = g;
     nhomChatSince = 0;
+    nhomSuaSince = 0; // Gói 4
+    var hopStN = $("hopStickerNhom"); if (hopStN) hopStN.classList.add("an");
     tabDangChon = "tinnhan";
     capNhatKhungTab();
     hienManTinNhan("manChatNhom");
@@ -2682,15 +3006,18 @@ if (typeof document !== "undefined") {
     dungPollChatNhom();
     nhomDangChat = null;
     nhomChatSince = 0;
+    nhomSuaSince = 0;
     nhomThongTin = null;
     hienManTinNhan("khuDsTroChuyen");
     if (napLaiDs) taiDsTroChuyen();
   }
 
-  function themBongBongNhom(t) {
-    var hop = $("hopTinNhanNhom");
+  // Gói 4: tạo dòng tin nhóm (thêm mới + vá tại chỗ khi thu hồi giống chat 1-1)
+  function taoDongTinNhom(t) {
     var dong = document.createElement("div");
     dong.className = "dongTin " + (t.cuaToi ? "cuaToi" : "cuaHo");
+    if (t.id) dong.dataset.tinId = t.id;
+    dong.dataset.tg = t.tg || 0;
     if (!t.cuaToi) {
       var ten = document.createElement("div");
       ten.className = "tenNguoiGuiTrongNhom";
@@ -2699,25 +3026,78 @@ if (typeof document !== "undefined") {
     }
     var bong = document.createElement("div");
     bong.className = "bongBong";
-    trangTriTinVanBan(bong, t.noiDung || "");
+    var kieuN = t.kieu || "van-ban";
+    if (t.daThuHoi) {
+      var spThuHoiN = document.createElement("span");
+      spThuHoiN.className = "tinBiThuHoi";
+      spThuHoiN.textContent = "↩️ Tin nhắn đã được thu hồi";
+      bong.appendChild(spThuHoiN);
+    } else if (kieuN === "sticker") {
+      bong.classList.add("bongSticker");
+      var stLonN = document.createElement("div");
+      stLonN.className = "stickerTrongChat";
+      stLonN.textContent = t.noiDung || "🌟";
+      bong.appendChild(stLonN);
+    } else {
+      trangTriTinVanBan(bong, t.noiDung || "");
+    }
     dong.appendChild(bong);
     var gio = document.createElement("span");
     gio.className = "gioNho";
     gio.textContent = dinhDangGio(t.tg);
     dong.appendChild(gio);
-    hop.appendChild(dong);
+    if (TQD_SERVER && tokenMayChu && !t.daThuHoi) {
+      if (kieuN === "van-ban" && t.noiDung) {
+        var nutDichN = document.createElement("button");
+        nutDichN.type = "button";
+        nutDichN.className = "nutLuuTin";
+        nutDichN.textContent = "🌐 Dịch";
+        nutDichN.addEventListener("click", function () { dichTinNhan(t, dong); });
+        dong.appendChild(nutDichN);
+      }
+      if (t.cuaToi && t.id && (Date.now() - t.tg) < 86400000) {
+        var nutThuHoiN = document.createElement("button");
+        nutThuHoiN.type = "button";
+        nutThuHoiN.className = "nutLuuTin";
+        nutThuHoiN.textContent = "↩ Thu hồi";
+        nutThuHoiN.addEventListener("click", function () { thuHoiTinNhom(t); });
+        dong.appendChild(nutThuHoiN);
+      }
+    }
+    dong._tin = t;
+    return dong;
+  }
+
+  function themBongBongNhom(t) {
+    var hop = $("hopTinNhanNhom");
+    hop.appendChild(taoDongTinNhom(t));
     hop.scrollTop = hop.scrollHeight;
+  }
+
+  function capNhatBongBongNhom(t) {
+    if (!t || !t.id) return;
+    var hop = $("hopTinNhanNhom");
+    if (!hop) return;
+    var cu = null;
+    hop.querySelectorAll(".dongTin").forEach(function (d) { if (d.dataset.tinId === t.id) cu = d; });
+    if (!cu) { themBongBongNhom(t); return; }
+    cu.replaceWith(taoDongTinNhom(t));
   }
 
   function taiTinNhomMoi() {
     if (!nhomDangChat || !tokenMayChu) return;
     var id = nhomDangChat.id;
-    goiAPI("/api/nhom/tin-nhan?nhom=" + encodeURIComponent(id) + "&since=" + nhomChatSince, "GET", null, true)
+    goiAPI("/api/nhom/tin-nhan?nhom=" + encodeURIComponent(id) + "&since=" + nhomChatSince + "&sinceSua=" + nhomSuaSince, "GET", null, true)
       .then(function (kq) {
         if (!kq.ok || !nhomDangChat || nhomDangChat.id !== id) return;
         (kq.tinNhan || []).forEach(function (t) {
           themBongBongNhom(t);
           if (t.tg > nhomChatSince) nhomChatSince = t.tg;
+        });
+        // Gói 4: vá tại chỗ tin nhóm đã bị thu hồi
+        (kq.tinCapNhat || []).forEach(function (t) {
+          capNhatBongBongNhom(t);
+          if (t.suaLuc && t.suaLuc > nhomSuaSince) nhomSuaSince = t.suaLuc;
         });
       });
   }
@@ -3741,6 +4121,7 @@ if (typeof document !== "undefined") {
     xhr.setRequestHeader("X-Loai-Tep", loai);
     xhr.setRequestHeader("X-Ten-Tep", encodeURIComponent(tenGoc || ""));
     xhr.setRequestHeader("X-Thoi-Luong", String(thoiLuong || 0));
+    xhr.setRequestHeader("X-Tu-Huy", String(layTuHuyDangChon())); // Gói 4
     xhr.upload.onprogress = function (e) {
       if (e.lengthComputable && e.total > 0) hienThanhTaiLen(Math.round((e.loaded / e.total) * 100));
     };
@@ -4226,6 +4607,7 @@ if (typeof document !== "undefined") {
 
   function xuLyTinHieu(msg) {
     if (msg.loaiTin === "dang-ky-ok") return;
+    if (msg.loaiTin === "dang-nhap") { nhanTinDangNhap(msg); return; } // Gói 4: đang nhập…
     if (typeof msg.loaiTin === "string" && msg.loaiTin.indexOf("phong-") === 0) { xuLyTinPhong(msg); return; } // Gói 3
     if (msg.loaiTin === "cuoc-goi-den") { coCuocGoiDen(msg); return; }
     if (msg.loaiTin === "dang-do-chuong") {
@@ -4380,6 +4762,7 @@ if (typeof document !== "undefined") {
     $("chkTimBangSDTDanhBa").checked = !!c.timBangSDT;
     $("chkLaNhanTin").checked = !!c.laNhanTin;
     $("chkChiNhanTinBanBe").checked = !!c.chiNhanTinBanBe; // Gói 1
+    $("chkHienDaXem").checked = c.hienDaXem !== false; // Gói 4
     $("chkLaGoi").checked = !!c.laGoi;
     $("chkLaGoiCd").checked = !!c.laGoi;
     $("chkEnterGui").checked = c.enterGui !== false;
@@ -4409,6 +4792,7 @@ if (typeof document !== "undefined") {
       timBangSDT: $("chkTimBangSDT").checked,
       laNhanTin: $("chkLaNhanTin").checked,
       chiNhanTinBanBe: $("chkChiNhanTinBanBe").checked, // Gói 1
+      hienDaXem: $("chkHienDaXem").checked, // Gói 4
       laGoi: $("chkLaGoi").checked,
       enterGui: $("chkEnterGui").checked,
       hienGioTin: $("chkHienGioTin").checked,
@@ -5449,6 +5833,13 @@ if (typeof document !== "undefined") {
       // V5.1: tôn trọng cài đặt "Nhấn Enter để gửi tin" (mặc định bật như trước)
       if (ev.key === "Enter" && (!caiDatHT || caiDatHT.enterGui !== false)) guiTinSuKien();
     });
+    // Gói 4: sticker + đang nhập + chọn chế độ tự huỷ
+    $("btnSticker").addEventListener("click", moHopSticker1v1);
+    $("btnStickerNhom").addEventListener("click", moHopStickerNhom);
+    $("inpTinNhan").addEventListener("input", baoDangNhap);
+    $("selTuHuy").addEventListener("change", function () {
+      $("goiYTuHuy").classList.toggle("an", layTuHuyDangChon() === 0);
+    });
     $("btnQuayLaiChat").addEventListener("click", function () { dongManChat(true); });
     $("btnChanTrongChat").addEventListener("click", chanTrongChatSuKien);
     // Gói 1: báo cáo trong chat, tin nhắn chờ, gửi selfie xác thực
@@ -5483,7 +5874,7 @@ if (typeof document !== "undefined") {
     $("btnHuyAm").addEventListener("click", huyAmDaGhi);
     $("btnDangBai").addEventListener("click", dangBaiSuKien);
     ["chkTimBangSDT", "chkLaNhanTin", "chkLaGoi", "chkEnterGui", "chkHienGioTin",
-     "chkRungKhiGoiDen", "chkTuongThongBao", "chkQrTuDongTrongAnh", "chkQrTheNganHang", "chkChiNhanTinBanBe"].forEach(function (idCongTac) {
+     "chkRungKhiGoiDen", "chkTuongThongBao", "chkQrTuDongTrongAnh", "chkQrTheNganHang", "chkChiNhanTinBanBe", "chkHienDaXem"].forEach(function (idCongTac) {
       $(idCongTac).addEventListener("change", luuCaiDatTuCongTac);
     });
     // V5.1: công tắc "gương" — cùng một khóa cài đặt xuất hiện ở 2 trang, đổi bên nào cũng đồng bộ
