@@ -6232,7 +6232,7 @@ if (typeof document !== "undefined") {
     { loai: "sub", productId: PLAY_SKU_SUB, basePlanId: "thang", period: "P1M", ten: "Gói tháng", giaTC: 59000, han: "Dùng trong 30 ngày · tự gia hạn qua Google Play" },
     { loai: "sub", productId: PLAY_SKU_SUB, basePlanId: "3-thang", period: "P3M", ten: "Gói 3 tháng", giaTC: 149000, han: "Dùng trong 90 ngày · tự gia hạn qua Google Play" },
     { loai: "sub", productId: PLAY_SKU_SUB, basePlanId: "nam", period: "P1Y", ten: "Gói năm", giaTC: 0, han: "Dùng trong 365 ngày · tự gia hạn qua Google Play" },
-    { loai: "mot-lan", productId: PLAY_SKU_DOI, basePlanId: null, period: null, ten: "Gói trọn đời", giaTC: 349000, han: "Dùng trọn đời — trả một lần duy nhất" }
+    { loai: "mot-lan", productId: PLAY_SKU_DOI, basePlanId: null, period: null, ten: "Gói trọn đời", giaTC: 2990000, han: "Dùng trọn đời — trả một lần duy nhất" }
   ];
   var dichVuPlay = null;
 

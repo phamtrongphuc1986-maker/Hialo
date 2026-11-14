@@ -1,5 +1,5 @@
 /* Hialo service worker: network-first cho file cùng nguồn (trang luôn mới khi có mạng). */
-var TEN_CACHE = 'hialo-v16';
+var TEN_CACHE = 'hialo-v17';
 self.addEventListener('install', function (e) { self.skipWaiting(); });
 self.addEventListener('activate', function (e) {
   e.waitUntil(
@@ -38,3 +38,5 @@ self.addEventListener('fetch', function (e) {
 /* hialo-v14 (14/11/2026): Goi 4 — dich tin nhan trong chat, sticker, thu hoi tin, da xem/dang nhap, tin tu huy */
 
 /* hialo-v15 (14/11/2026): Goi 5 — da ngon ngu (vi/en/tl/id/th) + dang nhap Google/Facebook (khung cho khoa OAuth) */
+
+/* hialo-v17 (14/11/2026): doi gia VIP tron doi 349.000d -> 2.990.000d (het gia mo man; bang 5 lan goi nam 590.000d) */
