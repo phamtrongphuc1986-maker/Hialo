@@ -367,6 +367,13 @@ try {
           <p class="giaiThich">Bật: người chưa kết bạn cũng nhắn tin cho bạn được. Tắt: chỉ bạn bè mới nhắn được.</p>
         </div>
         <div class="congTac">
+          <label class="hangCongTac" for="chkChiNhanTinBanBe">
+            <input type="checkbox" id="chkChiNhanTinBanBe">
+            <span><strong>Chỉ nhận tin từ bạn bè</strong></span>
+          </label>
+          <p class="giaiThich">Bật: tin nhắn đầu tiên của người lạ sẽ vào mục <strong>Tin nhắn chờ</strong> trong tab Tin nhắn — bạn xem trước, đồng ý thì tin mới chuyển vào hộp thư chính. Tài khoản nữ được bật sẵn chế độ này. Ảnh/tệp người lạ gửi vẫn bị chặn cho tới khi hai bạn đã trò chuyện được với nhau.</p>
+        </div>
+        <div class="congTac">
           <label class="hangCongTac" for="chkLaGoi">
             <input type="checkbox" id="chkLaGoi">
             <span><strong>Cho phép người lạ gọi</strong></span>
@@ -449,6 +456,15 @@ try {
 
         <h3 class="tieuDeCon">🖥️ Phiên đăng nhập</h3>
         <p class="moTa" id="thongTinPhien">Đang tải thông tin phiên…</p>
+
+        <h3 class="tieuDeCon">🛡️ Xác thực hồ sơ</h3>
+        <p class="moTa" id="trangThaiXacThucHoSo">Đang tải trạng thái xác thực…</p>
+        <div id="khuGuiXacThuc">
+          <p class="giaiThich">Chụp hoặc chọn một ảnh selfie rõ mặt của chính bạn. Đội ngũ Hialo đối chiếu và duyệt trong vòng 24 giờ. Hồ sơ đã xác thực có huy hiệu ✅ bên cạnh tên ở mọi nơi — giúp người khác tin tưởng bạn hơn. Ảnh chỉ dùng để duyệt xác thực.</p>
+          <input id="inpSelfieXacThuc" type="file" accept="image/*" class="an">
+          <button type="button" id="btnGuiXacThuc" class="nutChinh">📸 Gửi ảnh selfie xác thực</button>
+          <p class="loi" id="loiXacThuc"></p>
+        </div>
 
         <h3 class="tieuDeCon">🗑 Xóa tài khoản</h3>
         <p class="moTa">Bạn có thể tự xóa tài khoản ngay trong ứng dụng. Thao tác này xóa dữ liệu theo Chính sách bảo mật và <strong>không khôi phục được</strong>.</p>
@@ -772,7 +788,20 @@ try {
         </div>
       </div>
       <div id="dsTroChuyen" class="danhSach"></div>
+      <button type="button" id="btnMoTinCho" class="nutPhu an" style="width:100%;margin-top:10px;padding:12px">📥 Tin nhắn chờ <span id="soTinCho"></span></button>
       <p class="goiY" id="trongTroChuyen">Chưa có cuộc trò chuyện nào. Vào Danh bạ, chọn một người bạn để nhắn tin nhé.</p>
+    </section>
+
+    <section class="the an" id="manTinCho">
+      <div class="dauChat">
+        <button type="button" id="btnQuayLaiTinCho" class="nutPhu nho">←</button>
+        <div class="thongTinNguoi">
+          <p class="tenNguoi">📥 Tin nhắn chờ</p>
+          <p class="chiTietNguoi">Tin đầu tiên từ người lạ — đồng ý để chuyển vào hộp thư chính</p>
+        </div>
+      </div>
+      <div id="dsTinCho" class="danhSach"></div>
+      <p class="goiY" id="trongTinCho">Không có tin nhắn chờ nào.</p>
     </section>
 
     <section class="the an" id="manChat">
@@ -780,11 +809,12 @@ try {
         <button type="button" id="btnQuayLaiChat" class="nutPhu nho">←</button>
         <span id="avatarChat" class="avatarChat">😀</span>
         <div class="thongTinNguoi">
-          <p class="tenNguoi" id="tenChat"></p>
+          <p class="tenNguoi"><span id="tenChat"></span><span id="huyHieuChat" class="huyHieuXacThuc an" title="Hồ sơ đã xác thực"> ✅</span></p>
           <p class="chiTietNguoi" id="sdtChat"></p>
         </div>
         <button type="button" id="btnGoiThoai" class="nutPhu nho" title="Gọi thoại">📞</button>
         <button type="button" id="btnGoiVideo" class="nutPhu nho" title="Gọi video">📹</button>
+        <button type="button" id="btnBaoCaoTrongChat" class="nutPhu nho" title="Báo cáo người này">🚩</button>
         <button type="button" id="btnChanTrongChat" class="nutPhu nho nutDangXuat">🚫 Chặn</button>
       </div>
       <div id="hopTinNhan" class="hopTinNhan"></div>

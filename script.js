@@ -845,6 +845,13 @@ if (typeof document !== "undefined") {
         sao.textContent = " ⭐";
         ten.appendChild(sao);
       }
+      if (p.xacThuc) { // Gói 1: huy hiệu ✅ hồ sơ đã xác thực
+        var huyXT = document.createElement("span");
+        huyXT.className = "huyHieuXacThuc";
+        huyXT.textContent = " ✅";
+        huyXT.title = "Hồ sơ đã xác thực";
+        ten.appendChild(huyXT);
+      }
       var ct = document.createElement("p");
       ct.className = "chiTietNguoi";
       ct.textContent = (p.gioi === "nu" ? "♀ Nữ" : "♂ Nam") + " · " + p.tuoi + " tuổi";
@@ -887,7 +894,8 @@ if (typeof document !== "undefined") {
           return {
             ten: p.ten || p.nick, gioi: p.gioi || p.gioiTinh,
             tuoi: p.tuoi, emoji: p.emoji, khoangCach: p.khoangCach,
-            vip: p.vip === true // V4.1
+            vip: p.vip === true, // V4.1
+            xacThuc: p.xacThuc === true // Gói 1
           };
         });
         // V4.1: hết lượt xem miễn phí trong ngày -> hiện banner mời nâng VIP
@@ -1053,7 +1061,7 @@ if (typeof document !== "undefined") {
       }
       var nut;
       if (kq.quanHe === "ban") {
-        nut = taoNutNhan("💬 Nhắn tin", "nutChinh nho", function () { moChat(sdt, kq.nick, kq.emoji); });
+        nut = taoNutNhan("💬 Nhắn tin", "nutChinh nho", function () { moChat(sdt, kq.nick, kq.emoji, { laBanBe: true, xacThuc: kq.xacThuc === true }); });
       } else if (kq.quanHe === "da-gui") {
         nut = taoNutNhan("Đã gửi lời mời", "nutPhu nho", null, true);
       } else if (kq.quanHe === "cho-duy") {
@@ -1074,8 +1082,14 @@ if (typeof document !== "undefined") {
           });
         });
       }
-      hop.appendChild(taoTheNguoi(kq.emoji, kq.nick,
-        (kq.gioiTinh === "nu" ? "♀ Nữ" : "♂ Nam") + " · " + kq.tuoi + " tuổi", nut));
+      var cotNutTim = document.createElement("div");
+      cotNutTim.className = "hangHaiNut";
+      cotNutTim.appendChild(nut);
+      cotNutTim.appendChild(taoNutNhan("🚩", "nutPhu nho", function () { baoCaoNguoi(sdt, kq.nick); }));
+      var theTim = taoTheNguoi(kq.emoji, kq.nick,
+        (kq.gioiTinh === "nu" ? "♀ Nữ" : "♂ Nam") + " · " + kq.tuoi + " tuổi", cotNutTim);
+      ganHuyHieuXacThuc(theTim, kq.xacThuc === true);
+      hop.appendChild(theTim);
     });
   }
 
@@ -1096,8 +1110,11 @@ if (typeof document !== "undefined") {
         cot.appendChild(taoNutNhan("✖ Từ chối", "nutPhu nho", function () {
           traLoiKetBan(m.sdt, false);
         }));
-        hop.appendChild(taoTheNguoi(m.emoji, m.nick,
-          (m.gioiTinh === "nu" ? "♀ Nữ" : "♂ Nam") + " · " + m.tuoi + " tuổi", cot));
+        cot.appendChild(taoNutNhan("🚩", "nutPhu nho", function () { baoCaoNguoi(m.sdt, m.nick); }));
+        var theMoi = taoTheNguoi(m.emoji, m.nick,
+          (m.gioiTinh === "nu" ? "♀ Nữ" : "♂ Nam") + " · " + m.tuoi + " tuổi", cot);
+        ganHuyHieuXacThuc(theMoi, m.xacThuc === true);
+        hop.appendChild(theMoi);
       });
     });
   }
@@ -1128,9 +1145,130 @@ if (typeof document !== "undefined") {
         }
         var the = taoTheNguoi(b.emoji, b.nick,
           (b.gioiTinh === "nu" ? "♀ Nữ" : "♂ Nam") + " · " + b.tuoi + " tuổi · 📱 " + b.sdt, huy);
+        ganHuyHieuXacThuc(the, b.xacThuc === true);
         the.classList.add("bamDuoc");
-        the.addEventListener("click", function () { moChat(b.sdt, b.nick, b.emoji); });
+        the.addEventListener("click", function () { moChat(b.sdt, b.nick, b.emoji, { laBanBe: true, xacThuc: b.xacThuc === true }); });
         hop.appendChild(the);
+      });
+    });
+  }
+
+  // ---------- Gói 1: huy hiệu xác thực, báo cáo, tin nhắn chờ, xác thực hồ sơ ----------
+  // Gắn huy hiệu ✅ vào thẻ người (nếu hồ sơ đã xác thực)
+  function ganHuyHieuXacThuc(the, xacThuc) {
+    if (!xacThuc || !the) return;
+    var ten = the.querySelector(".tenNguoi");
+    if (!ten) return;
+    var huy = document.createElement("span");
+    huy.className = "huyHieuXacThuc";
+    huy.textContent = " ✅";
+    huy.title = "Hồ sơ đã xác thực";
+    ten.appendChild(huy);
+  }
+
+  // Báo cáo một người dùng — máy chủ lưu lại cho quản trị viên xử lý
+  function baoCaoNguoi(sdt, nick) {
+    var ten = nick || sdt;
+    var lyDo = window.prompt("Báo cáo " + ten + " vì lý do gì?\n(Ví dụ: quấy rối, lừa đảo, nội dung phản cảm, giả mạo…)", "");
+    if (lyDo === null) return;
+    goiAPI("/api/bao-cao", "POST", { sdt: sdt, lyDo: lyDo }, true).then(function (kq) {
+      if (!kq.ok) { hienToast(kq.loi || "Chưa gửi được báo cáo."); return; }
+      hienToast("Đã gửi báo cáo. Cảm ơn bạn — đội ngũ sẽ xem xét 🚩");
+    });
+  }
+
+  // ----- Tin nhắn chờ -----
+  var dsTinChoHT = [];
+  function taiSoTinCho() {
+    if (!TQD_SERVER || !tokenMayChu) return;
+    goiAPI("/api/tin-nhan/cho", "GET", null, true).then(function (kq) {
+      if (!kq.ok) return;
+      dsTinChoHT = kq.tinCho || [];
+      var btn = $("btnMoTinCho");
+      if (!btn) return;
+      btn.classList.toggle("an", dsTinChoHT.length === 0);
+      var tong = 0;
+      dsTinChoHT.forEach(function (m) { tong += m.soTin || 0; });
+      $("soTinCho").textContent = tong ? "(" + tong + " tin)" : "";
+    });
+  }
+
+  function moManTinCho() {
+    hienManTinNhan("manTinCho");
+    veDsTinCho();
+    taiSoTinCho();
+  }
+
+  function veDsTinCho() {
+    var hop = $("dsTinCho");
+    if (!hop) return;
+    hop.innerHTML = "";
+    $("trongTinCho").classList.toggle("an", dsTinChoHT.length > 0);
+    dsTinChoHT.forEach(function (m) {
+      var cot = document.createElement("div");
+      cot.className = "hangHaiNut";
+      cot.appendChild(taoNutNhan("✔ Đồng ý & xem tin", "nutChinh nho", function () { traLoiTinCho(m, true); }));
+      cot.appendChild(taoNutNhan("🗑 Xóa", "nutPhu nho", function () { traLoiTinCho(m, false); }));
+      var the = taoTheNguoi(m.emoji, m.nick,
+        (m.gioiTinh === "nu" ? "♀ Nữ" : "♂ Nam") + " · " + m.tuoi + " tuổi · " + m.soTin + " tin chờ · “" + (m.tinCuoi.noiDung || "") + "”",
+        cot);
+      ganHuyHieuXacThuc(the, m.xacThuc === true);
+      hop.appendChild(the);
+    });
+  }
+
+  function traLoiTinCho(m, chapNhan) {
+    goiAPI("/api/tin-nhan/cho/tra-loi", "POST", { sdt: m.sdt, chapNhan: chapNhan }, true).then(function (kq) {
+      if (!kq.ok) { hienToast(kq.loi || "Chưa xử lý được."); return; }
+      dsTinChoHT = dsTinChoHT.filter(function (x) { return x.sdt !== m.sdt; });
+      taiSoTinCho();
+      if (chapNhan) {
+        hienToast("Đã đồng ý trò chuyện với " + m.nick + " 💬");
+        moChat(m.sdt, m.nick, m.emoji, { laBanBe: false, xacThuc: m.xacThuc === true });
+      } else {
+        hienToast("Đã xóa tin chờ của " + m.nick);
+        veDsTinCho();
+      }
+    });
+  }
+
+  // ----- Xác thực hồ sơ bằng selfie -----
+  function taiTrangThaiXacThuc() {
+    if (!TQD_SERVER || !tokenMayChu) return;
+    goiAPI("/api/xac-thuc", "GET", null, true).then(function (kq) {
+      var el = $("trangThaiXacThucHoSo");
+      if (!el) return;
+      var khu = $("khuGuiXacThuc");
+      if (!kq.ok) { el.textContent = "Chưa tải được trạng thái xác thực."; return; }
+      if (kq.trangThai === "da") {
+        el.textContent = "✅ Hồ sơ của bạn ĐÃ được xác thực — huy hiệu ✅ đang hiện cạnh tên bạn ở mọi nơi.";
+        if (khu) khu.classList.add("an");
+      } else if (kq.trangThai === "cho") {
+        el.textContent = "⏳ Ảnh selfie của bạn đang chờ duyệt. Đội ngũ sẽ xem trong vòng 24 giờ.";
+        if (khu) khu.classList.add("an");
+      } else if (kq.trangThai === "tu-choi") {
+        el.textContent = "❌ Lần gửi trước chưa được duyệt (ảnh chưa rõ mặt hoặc chưa khớp hồ sơ). Bạn gửi lại ảnh selfie rõ mặt nhé.";
+        if (khu) khu.classList.remove("an");
+      } else {
+        el.textContent = "Hồ sơ của bạn chưa được xác thực. Gửi ảnh selfie để nhận huy hiệu ✅ Đã xác thực.";
+        if (khu) khu.classList.remove("an");
+      }
+    });
+  }
+
+  function guiSelfieXacThuc(file) {
+    $("loiXacThuc").textContent = "";
+    if (!file || (file.type || "").indexOf("image/") !== 0) {
+      $("loiXacThuc").textContent = "Hãy chọn một file ảnh selfie.";
+      return;
+    }
+    hienToast("Đang tải ảnh xác thực lên…");
+    taiTepRiengLen(file, "xac-thuc").then(function (up) {
+      if (!up.ok) { $("loiXacThuc").textContent = up.loi || "Tải ảnh lên chưa được."; return; }
+      goiAPI("/api/xac-thuc/gui", "POST", { tepId: up.tepId }, true).then(function (kq) {
+        if (!kq.ok) { $("loiXacThuc").textContent = kq.loi || "Chưa gửi được yêu cầu xác thực."; return; }
+        hienToast("Đã gửi ảnh xác thực — đang chờ duyệt 🛡️");
+        taiTrangThaiXacThuc();
       });
     });
   }
@@ -1138,6 +1276,7 @@ if (typeof document !== "undefined") {
   // ---------- Tin nhắn / chat ----------
   function taiDsTroChuyen() {
     if (!TQD_SERVER || !tokenMayChu) return;
+    taiSoTinCho(); // Gói 1: cập nhật nút Tin nhắn chờ
     // V6: gộp cả nhóm chat vào danh sách, sắp chung theo thời gian tin cuối
     Promise.all([
       goiAPI("/api/tin-nhan/danh-sach", "GET", null, true),
@@ -1176,8 +1315,9 @@ if (typeof document !== "undefined") {
           }
           var xemTruoc = (c.tinCuoi.cuaToi ? "Bạn: " : "") + c.tinCuoi.noiDung;
           var the = taoTheNguoi(c.emoji, c.nick, xemTruoc, phai);
+          ganHuyHieuXacThuc(the, c.xacThuc === true);
           the.classList.add("bamDuoc");
-          the.addEventListener("click", function () { moChat(c.sdt, c.nick, c.emoji); });
+          the.addEventListener("click", function () { moChat(c.sdt, c.nick, c.emoji, { laBanBe: c.laBanBe === true, xacThuc: c.xacThuc === true }); });
           hop.appendChild(the);
         } else {
           var g = m.g;
@@ -1211,8 +1351,9 @@ if (typeof document !== "undefined") {
     });
   }
 
-  function moChat(sdt, nick, emoji) {
-    chatVoi = { sdt: sdt, nick: nick || "", emoji: emoji || "😀" };
+  function moChat(sdt, nick, emoji, tuyChon) {
+    chatVoi = { sdt: sdt, nick: nick || "", emoji: emoji || "😀",
+      laBanBe: !!(tuyChon && tuyChon.laBanBe), xacThuc: !!(tuyChon && tuyChon.xacThuc) };
     chatSince = 0;
     tabDangChon = "tinnhan";
     capNhatKhungTab();
@@ -1221,12 +1362,14 @@ if (typeof document !== "undefined") {
     // V6: đóng các màn nhóm đang mở dở để không chồng màn hình
     dungPollChatNhom();
     nhomDangChat = null;
-    ["manChatNhom", "manTaoNhom", "manThongTinNhom"].forEach(function (id) {
+    ["manChatNhom", "manTaoNhom", "manThongTinNhom", "manTinCho"].forEach(function (id) {
       var e = $(id);
       if (e) e.classList.add("an");
     });
     $("avatarChat").textContent = chatVoi.emoji;
     $("tenChat").textContent = chatVoi.nick || chatVoi.sdt;
+    var huyChat = $("huyHieuChat");
+    if (huyChat) huyChat.classList.toggle("an", !chatVoi.xacThuc); // Gói 1: huy hiệu ✅ trong chat
     $("sdtChat").textContent = "📱 " + chatVoi.sdt;
     $("hopTinNhan").innerHTML = "";
     $("loiChat").textContent = "";
@@ -1246,7 +1389,7 @@ if (typeof document !== "undefined") {
     var mc = $("manChat");
     if (mc) mc.classList.add("an");
     // V6: các màn nhóm cũng quay về danh sách
-    ["manChatNhom", "manTaoNhom", "manThongTinNhom"].forEach(function (id) {
+    ["manChatNhom", "manTaoNhom", "manThongTinNhom", "manTinCho"].forEach(function (id) {
       var e = $(id);
       if (e) e.classList.add("an");
     });
@@ -1282,8 +1425,24 @@ if (typeof document !== "undefined") {
       img.className = "anhTrongChat";
       img.src = duongDanTep(t.tepId);
       img.alt = t.tenTep || "Ảnh";
-      img.addEventListener("click", function () { window.open(duongDanTep(t.tepId), "_blank"); });
-      bong.appendChild(img);
+      // Gói 1: ảnh từ người CHƯA phải bạn bè -> làm mờ + nút Xem rõ (chống ảnh nhạy cảm bất ngờ)
+      if (!t.cuaToi && chatVoi && chatVoi.laBanBe !== true) {
+        img.classList.add("anhBiMo");
+        var nutXemAnh = document.createElement("button");
+        nutXemAnh.type = "button";
+        nutXemAnh.className = "nutXemAnhMo";
+        nutXemAnh.textContent = "👁 Ảnh từ người chưa phải bạn bè — chạm để xem rõ";
+        nutXemAnh.addEventListener("click", function () {
+          img.classList.remove("anhBiMo");
+          nutXemAnh.remove();
+          img.addEventListener("click", function () { window.open(duongDanTep(t.tepId), "_blank"); });
+        });
+        bong.appendChild(img);
+        bong.appendChild(nutXemAnh);
+      } else {
+        img.addEventListener("click", function () { window.open(duongDanTep(t.tepId), "_blank"); });
+        bong.appendChild(img);
+      }
       lichQuetQRTrongAnh(t.tepId, bong);
     } else if (kieu === "thoai" && t.tepId) {
       // V5: tin nhắn thoại — phát bằng thẻ audio ngay trong bong bóng
@@ -1369,6 +1528,7 @@ if (typeof document !== "undefined") {
         themBongBong(kq.tin);
         if (kq.tin.tg > chatSince) chatSince = kq.tin.tg;
       }
+      if (kq.dangCho) hienToast("Tin đã gửi vào hộp Tin nhắn chờ của " + (dich.nick || "người ấy") + " — họ đồng ý trò chuyện thì tin mới vào hộp thư chính 📥");
     });
   }
 
@@ -1393,7 +1553,7 @@ if (typeof document !== "undefined") {
   var nhomThongTin = null;      // chi tiết đầy đủ của nhóm ở màn Thông tin nhóm
 
   function hienManTinNhan(idMan) {
-    ["khuDsTroChuyen", "manChat", "manChatNhom", "manTaoNhom", "manThongTinNhom"].forEach(function (id) {
+    ["khuDsTroChuyen", "manChat", "manChatNhom", "manTaoNhom", "manThongTinNhom", "manTinCho"].forEach(function (id) {
       var el = $(id);
       if (el) el.classList.toggle("an", id !== idMan);
     });
@@ -2694,8 +2854,21 @@ if (typeof document !== "undefined") {
     return false;
   }
 
+  // Gói 1: cấu hình ICE lấy từ máy chủ (STUN Google + TURN của Hialo, credential
+  // ngắn hạn 1 giờ). Chưa tải được thì dùng STUN Google như các bản trước.
+  var cauHinhICEHT = [{ urls: "stun:stun.l.google.com:19302" }];
+  var lucTaiICE = 0;
+  function taiCauHinhICE() {
+    if (!TQD_SERVER || !tokenMayChu) return;
+    lucTaiICE = Date.now();
+    goiAPI("/api/ice", "GET", null, true).then(function (kq) {
+      if (kq.ok && Array.isArray(kq.iceServers) && kq.iceServers.length) cauHinhICEHT = kq.iceServers;
+    });
+  }
+
   function taoPC() {
-    var pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+    if (Date.now() - lucTaiICE > 3000000) taiCauHinhICE(); // Gói 1: làm mới credential TURN sau ~50 phút
+    var pc = new RTCPeerConnection({ iceServers: cauHinhICEHT });
     pc.onicecandidate = function (ev) {
       if (!ev.candidate) return;
       if (goiHT && goiHT.callId) {
@@ -3101,6 +3274,8 @@ if (typeof document !== "undefined") {
       dienCaiDatVaoTrang();
       capNhatBongTrangThai();
       veKhuPin();
+      taiTrangThaiXacThuc(); // Gói 1: trạng thái xác thực hồ sơ
+      taiCauHinhICE(); // Gói 1: cấu hình ICE (STUN + TURN) cho cuộc gọi
     });
   }
 
@@ -3111,6 +3286,7 @@ if (typeof document !== "undefined") {
     $("chkTimBangSDT").checked = !!c.timBangSDT;
     $("chkTimBangSDTDanhBa").checked = !!c.timBangSDT;
     $("chkLaNhanTin").checked = !!c.laNhanTin;
+    $("chkChiNhanTinBanBe").checked = !!c.chiNhanTinBanBe; // Gói 1
     $("chkLaGoi").checked = !!c.laGoi;
     $("chkLaGoiCd").checked = !!c.laGoi;
     $("chkEnterGui").checked = c.enterGui !== false;
@@ -3139,6 +3315,7 @@ if (typeof document !== "undefined") {
     goiAPI("/api/cai-dat", "PUT", {
       timBangSDT: $("chkTimBangSDT").checked,
       laNhanTin: $("chkLaNhanTin").checked,
+      chiNhanTinBanBe: $("chkChiNhanTinBanBe").checked, // Gói 1
       laGoi: $("chkLaGoi").checked,
       enterGui: $("chkEnterGui").checked,
       hienGioTin: $("chkHienGioTin").checked,
@@ -4140,6 +4317,20 @@ if (typeof document !== "undefined") {
     });
     $("btnQuayLaiChat").addEventListener("click", function () { dongManChat(true); });
     $("btnChanTrongChat").addEventListener("click", chanTrongChatSuKien);
+    // Gói 1: báo cáo trong chat, tin nhắn chờ, gửi selfie xác thực
+    $("btnBaoCaoTrongChat").addEventListener("click", function () {
+      if (chatVoi) baoCaoNguoi(chatVoi.sdt, chatVoi.nick);
+    });
+    $("btnMoTinCho").addEventListener("click", moManTinCho);
+    $("btnQuayLaiTinCho").addEventListener("click", function () {
+      hienManTinNhan("khuDsTroChuyen");
+      taiDsTroChuyen();
+    });
+    $("btnGuiXacThuc").addEventListener("click", function () { $("inpSelfieXacThuc").click(); });
+    $("inpSelfieXacThuc").addEventListener("change", function () {
+      if (this.files && this.files[0]) guiSelfieXacThuc(this.files[0]);
+      this.value = "";
+    });
     // ===== V5: nút gọi + gửi media trong chat =====
     $("btnGoiThoai").addEventListener("click", function () { batDauGoi("thoai"); });
     $("btnGoiVideo").addEventListener("click", function () { batDauGoi("video"); });
@@ -4158,7 +4349,7 @@ if (typeof document !== "undefined") {
     $("btnHuyAm").addEventListener("click", huyAmDaGhi);
     $("btnDangBai").addEventListener("click", dangBaiSuKien);
     ["chkTimBangSDT", "chkLaNhanTin", "chkLaGoi", "chkEnterGui", "chkHienGioTin",
-     "chkRungKhiGoiDen", "chkTuongThongBao", "chkQrTuDongTrongAnh", "chkQrTheNganHang"].forEach(function (idCongTac) {
+     "chkRungKhiGoiDen", "chkTuongThongBao", "chkQrTuDongTrongAnh", "chkQrTheNganHang", "chkChiNhanTinBanBe"].forEach(function (idCongTac) {
       $(idCongTac).addEventListener("change", luuCaiDatTuCongTac);
     });
     // V5.1: công tắc "gương" — cùng một khóa cài đặt xuất hiện ở 2 trang, đổi bên nào cũng đồng bộ

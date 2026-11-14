@@ -786,3 +786,10 @@ html.toi .linkTrongChat { color: #93c5fd; }
 html.toi .chipQRTrongAnh { background: #16283a; color: #93c5fd; border-color: #2563eb; }
 html.toi .dongQuyen { border-bottom-color: #262c3d; }
 html.toi .trangThaiQuyen { color: #c8cdd6; }
+
+/* ===== Gói 1 (14/11/2026): huy hiệu xác thực, tin nhắn chờ, ảnh mờ ===== */
+.huyHieuXacThuc { color: #16a34a; }
+#btnMoTinCho { font-weight: 600; }
+.anhBiMo { filter: blur(16px); }
+.nutXemAnhMo { display: block; margin-top: 6px; background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; border-radius: 10px; padding: 8px 10px; font-size: 13px; cursor: pointer; font-family: inherit; }
+html.toi .nutXemAnhMo { background: #3a2f14; color: #fcd34d; border-color: #92600a; }
