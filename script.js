@@ -2531,6 +2531,7 @@ if (typeof document !== "undefined") {
       taiDsChanCaNhan();
       taiTrangThaiVip(); // V4.1
       taiGoiVip();       // V4.1
+      khoiTaoPlayBilling(); // PLAY BILLING: chỉ bật trong bản app ?play=1 có Digital Goods API
       // Gói 3: tab mặc định là Khám phá -> nạp sẵn khoảnh khắc/thông báo/điểm/phòng
       taiKhoanhKhac(); taiThongBao(); taiDiemThuong(); taiPhongThoai();
     }
@@ -5979,7 +5980,7 @@ if (typeof document !== "undefined") {
   //       hỏi lại trạng thái đơn — app KHÔNG có khả năng tự bật VIP cho bất kỳ ai.
   // ======================================================================
   var vipCuaToi = { vip: false, goi: null, hetHan: null }; // trạng thái VIP của chính mình
-  var TEN_GOI_VIP = { tuan: "Gói tuần", thang: "Gói tháng", quy: "Gói 3 tháng", doi: "Gói trọn đời" };
+  var TEN_GOI_VIP = { tuan: "Gói tuần", thang: "Gói tháng", quy: "Gói 3 tháng", doi: "Gói trọn đời", nam: "Gói năm" };
 
   function dinhDangTien(n) { return Number(n).toLocaleString("vi-VN") + " đ"; }
 
@@ -6203,6 +6204,234 @@ if (typeof document !== "undefined") {
         hop.appendChild(the);
       });
     });
+  }
+
+  // ======================================================================
+  // ===== PLAY BILLING — mua VIP qua Google Play (chỉ bản app ?play=1) ===
+  // Điều kiện hiện khối: (1) chế độ app Play (class "playapp" trên <html> —
+  // do ?play=1 hoặc referrer android-app:// đặt) VÀ (2) có
+  // 'getDigitalGoodsService' trong window. Thiếu một trong hai -> khối giữ
+  // class anPlay (ẩn êm); bản web thường giữ nguyên 100% luồng SePay.
+  // Giá: lấy từ getDetails() (giá thật theo khu vực người dùng). Không
+  // khớp được chi tiết -> giá VND tham chiếu của Console KÈM NHÃN; riêng
+  // gói năm không có giá tham chiếu (giá do chủ app chốt trong Console)
+  // -> hiện "Xem giá trên Google Play".
+  // Mua: PaymentRequest method https://play.google.com/billing, sku lấy
+  // đúng itemId mà getDetails trả về cho gói đó (Play có thể trả itemId
+  // dạng "hialo_vip:<basePlanId>" cho từng base plan; không có chi tiết
+  // thì rơi về productId). purchaseToken gửi lên POST /api/play/xac-minh —
+  // MÁY CHỦ đối chiếu basePlanId + expiryTime thật với Google rồi mới cấp
+  // VIP, nên quyền lợi luôn đúng gói đã trả tiền thật. Máy chủ chưa có
+  // khóa dịch vụ -> 503 {loi:"chua-cau-hinh"} -> thông báo nhẹ + ẩn nút.
+  // ======================================================================
+  var PLAY_PROVIDER = "https://play.google.com/billing";
+  var PLAY_SKU_SUB = "hialo_vip";
+  var PLAY_SKU_DOI = "hialo_vip_lifetime";
+  var PLAY_GOI = [
+    { loai: "sub", productId: PLAY_SKU_SUB, basePlanId: "tuan", period: "P1W", ten: "Gói tuần", giaTC: 25000, han: "Dùng trong 7 ngày · tự gia hạn qua Google Play" },
+    { loai: "sub", productId: PLAY_SKU_SUB, basePlanId: "thang", period: "P1M", ten: "Gói tháng", giaTC: 59000, han: "Dùng trong 30 ngày · tự gia hạn qua Google Play" },
+    { loai: "sub", productId: PLAY_SKU_SUB, basePlanId: "3-thang", period: "P3M", ten: "Gói 3 tháng", giaTC: 149000, han: "Dùng trong 90 ngày · tự gia hạn qua Google Play" },
+    { loai: "sub", productId: PLAY_SKU_SUB, basePlanId: "nam", period: "P1Y", ten: "Gói năm", giaTC: 0, han: "Dùng trong 365 ngày · tự gia hạn qua Google Play" },
+    { loai: "mot-lan", productId: PLAY_SKU_DOI, basePlanId: null, period: null, ten: "Gói trọn đời", giaTC: 349000, han: "Dùng trọn đời — trả một lần duy nhất" }
+  ];
+  var dichVuPlay = null;
+
+  function playDatTrangThai(msg) {
+    var el = $("playTrangThai");
+    if (el) el.textContent = msg || "";
+  }
+
+  // Khớp ItemDetails của getDetails với một gói: ưu tiên itemId dạng
+  // "productId:basePlanId", sau đó productId + subscriptionPeriod (ISO 8601).
+  function playKhopChiTiet(goi, dsChiTiet) {
+    var i, ct;
+    for (i = 0; i < dsChiTiet.length; i++) {
+      ct = dsChiTiet[i];
+      if (goi.loai === "mot-lan" && ct.itemId === PLAY_SKU_DOI) return ct;
+    }
+    if (goi.loai === "mot-lan") return null;
+    for (i = 0; i < dsChiTiet.length; i++) {
+      ct = dsChiTiet[i];
+      var phan = String(ct.itemId || "").split(":");
+      if (phan[0] === PLAY_SKU_SUB && phan[1] === goi.basePlanId) return ct;
+    }
+    for (i = 0; i < dsChiTiet.length; i++) {
+      ct = dsChiTiet[i];
+      if (ct.itemId === PLAY_SKU_SUB && ct.subscriptionPeriod === goi.period) return ct;
+    }
+    return null;
+  }
+
+  function playDinhDangGia(ct) {
+    try {
+      return new Intl.NumberFormat(navigator.language || "vi-VN",
+        { style: "currency", currency: ct.price.currency }).format(Number(ct.price.value));
+    } catch (e) { return String(ct.price.value) + " " + ct.price.currency; }
+  }
+
+  function veDsGoiPlay(dsChiTiet) {
+    var hop = $("dsGoiPlay");
+    if (!hop) return;
+    hop.innerHTML = "";
+    PLAY_GOI.forEach(function (goi) {
+      var ct = playKhopChiTiet(goi, dsChiTiet || []);
+      goi.skuMua = ct ? ct.itemId : goi.productId;
+      var the = document.createElement("div");
+      the.className = "theGoiVip";
+      var giua = document.createElement("div");
+      giua.className = "thongTinNguoi";
+      var ten = document.createElement("p");
+      ten.className = "tenNguoi";
+      ten.textContent = "⭐ " + goi.ten;
+      var gia = document.createElement("p");
+      gia.className = "giaGoi";
+      if (ct) gia.textContent = playDinhDangGia(ct);
+      else if (goi.giaTC) gia.textContent = dinhDangTien(goi.giaTC) + " (giá tham chiếu)";
+      else gia.textContent = "Xem giá trên Google Play";
+      var han = document.createElement("p");
+      han.className = "chiTietNguoi";
+      han.textContent = goi.han;
+      giua.appendChild(ten); giua.appendChild(gia); giua.appendChild(han);
+      var phai = document.createElement("div");
+      phai.className = "cotPhai";
+      phai.appendChild(taoNutNhan("🛒 Mua qua Google Play", "nutChinh nho", function () { muaQuaPlay(goi); }));
+      the.appendChild(giua); the.appendChild(phai);
+      hop.appendChild(the);
+    });
+  }
+
+  function playXacMinhPhiaMayChu(loai, productId, purchaseToken) {
+    return goiAPI("/api/play/xac-minh", "POST",
+      { loai: loai, productId: productId, purchaseToken: purchaseToken }, true);
+  }
+
+  function anNutMuaPlay() {
+    var hop = $("dsGoiPlay");
+    if (hop) hop.innerHTML = "";
+    var btn = $("btnKhoiPhucPlay");
+    if (btn) btn.style.display = "none";
+  }
+
+  function playXuLyKetQuaXacMinh(kq, cauChuc) {
+    if (kq && kq.loi === "chua-cau-hinh") {
+      playDatTrangThai("Mua VIP trong ứng dụng đang được hoàn thiện và sẽ mở rất sớm. Cảm ơn bạn!");
+      anNutMuaPlay();
+      return;
+    }
+    if (kq && kq.ok) {
+      vipCuaToi = {
+        vip: !!kq.vip, goi: kq.goi || null,
+        hetHan: (typeof kq.hetHan === "number") ? kq.hetHan : null
+      };
+      veTrangThaiVip();
+      playDatTrangThai("");
+      if (cauChuc) hienToast(cauChuc);
+    } else {
+      playDatTrangThai("");
+      hienToast((kq && kq.loi) || "Chưa xác minh được giao dịch. Bạn thử “Khôi phục giao dịch” sau ít phút nhé.");
+    }
+  }
+
+  function muaQuaPlay(goi) {
+    if (!dichVuPlay) return;
+    if (!tokenMayChu) { hienToast("Bạn cần đăng nhập trước khi mua VIP nhé."); return; }
+    playDatTrangThai("Đang mở thanh toán Google Play…");
+    var yeuCau;
+    try {
+      yeuCau = new PaymentRequest(
+        [{ supportedMethods: PLAY_PROVIDER, data: { sku: goi.skuMua || goi.productId } }],
+        // total bắt buộc theo Payment Request API; Google Play bỏ qua và dùng giá thật trên Play.
+        { total: { label: "Tổng", amount: { currency: "USD", value: "0" } } }
+      );
+    } catch (e) {
+      playDatTrangThai("");
+      hienToast("Thiết bị chưa hỗ trợ thanh toán Google Play.");
+      return;
+    }
+    yeuCau.show()
+      .then(function (phanHoi) {
+        var token = phanHoi.details && (phanHoi.details.purchaseToken || phanHoi.details.token);
+        if (!token) {
+          phanHoi.complete("fail");
+          playDatTrangThai("");
+          hienToast("Không nhận được mã giao dịch từ Google Play.");
+          return;
+        }
+        // Xác minh phía máy chủ TRƯỚC, xong mới complete() (đúng khuyến nghị của Google).
+        playXacMinhPhiaMayChu(goi.loai, goi.productId, token)
+          .then(function (kq) {
+            phanHoi.complete(kq && kq.ok ? "success" : "fail");
+            playXuLyKetQuaXacMinh(kq, "🎉 Thanh toán thành công! VIP đã được bật cho tài khoản của bạn.");
+          })
+          .catch(function () {
+            phanHoi.complete("fail");
+            playDatTrangThai("");
+            hienToast("Không kết nối được máy chủ để xác minh giao dịch. Bạn bấm “Khôi phục giao dịch” để nhận VIP nhé.");
+          });
+      })
+      .catch(function () {
+        // Người dùng tự hủy ở hộp thanh toán Play (AbortError) -> im lặng quay lại, không báo lỗi.
+        playDatTrangThai("");
+      });
+  }
+
+  // Khôi phục: liệt kê giao dịch đang sở hữu phía Google -> gửi từng token
+  // lên máy chủ xác minh lại (thuê bao được đối chiếu hạn mới nhất ở máy chủ).
+  function khoiPhucPlay() {
+    if (!dichVuPlay) return;
+    if (!tokenMayChu) { hienToast("Bạn cần đăng nhập trước khi khôi phục nhé."); return; }
+    playDatTrangThai("Đang kiểm tra các giao dịch Google Play của bạn…");
+    dichVuPlay.listPurchases()
+      .then(function (ds) {
+        if (!ds || !ds.length) {
+          playDatTrangThai("Không tìm thấy giao dịch Google Play nào cho tài khoản Google này.");
+          return null;
+        }
+        var kqTot = null;
+        var chuoi = Promise.resolve();
+        ds.forEach(function (gd) {
+          chuoi = chuoi.then(function () {
+            var productId = String(gd.itemId || "").split(":")[0];
+            var loai = productId === PLAY_SKU_DOI ? "mot-lan" : "sub";
+            return playXacMinhPhiaMayChu(loai, productId, gd.purchaseToken)
+              .then(function (kq) { if (kq && kq.ok) kqTot = kq; })
+              .catch(function () {});
+          });
+        });
+        return chuoi.then(function () { return kqTot; });
+      })
+      .then(function (kqTot) {
+        if (kqTot) {
+          playXuLyKetQuaXacMinh(kqTot, "🎉 Đã khôi phục VIP từ giao dịch Google Play của bạn.");
+        } else {
+          taiTrangThaiVip();
+          playDatTrangThai("Đã kiểm tra xong. Nếu bạn đã từng mua VIP mà chưa thấy bật, thử lại sau ít phút nhé.");
+        }
+      })
+      .catch(function () {
+        playDatTrangThai("Không kiểm tra được giao dịch lúc này. Thử lại sau nhé.");
+      });
+  }
+
+  function khoiTaoPlayBilling() {
+    var panel = $("panelPlayBilling");
+    if (!panel || dichVuPlay) return;
+    if (!document.documentElement.classList.contains("playapp")) return;
+    if (!("getDigitalGoodsService" in window)) return;
+    window.getDigitalGoodsService(PLAY_PROVIDER)
+      .then(function (service) {
+        dichVuPlay = service;
+        return service.getDetails([PLAY_SKU_SUB, PLAY_SKU_DOI])
+          .then(function (ds) { return ds || []; })
+          .catch(function () { return []; }); // lỗi lấy giá -> vẫn hiện thẻ, dùng giá tham chiếu
+      })
+      .then(function (dsChiTiet) {
+        veDsGoiPlay(dsChiTiet);
+        panel.classList.remove("anPlay");
+        var btn = $("btnKhoiPhucPlay");
+        if (btn) btn.addEventListener("click", khoiPhucPlay);
+      })
+      .catch(function () { /* bối cảnh không hỗ trợ Digital Goods -> giữ khối ẩn êm */ });
   }
 
   // --- Khởi tạo ---

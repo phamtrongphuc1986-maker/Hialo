@@ -28,6 +28,7 @@ try {
 .playapp .chiWeb { display: none !important; }
 .playapp .chiPlay { display: block !important; }
 .playapp #dsGoiVip, .playapp #panelChoThanhToan, .playapp #panelThanhToanVip, .playapp #btnLenVip { display: none !important; }
+.playapp #panelPlayBilling.anPlay { display: none !important; }
 </style>
 </head>
 <body>
@@ -678,6 +679,17 @@ try {
     <p class="moTa chiWeb">VIP giúp bạn tìm quanh đây <strong>không giới hạn số hồ sơ</strong>, bán kính tới <strong>20 km</strong>, nhắn tin được cho người lạ và được <strong>ưu tiên hiển thị</strong> trong kết quả tìm của người khác. Đăng ký miễn phí 100% — chỉ trả tiền khi nâng VIP. Thanh toán <strong>tự động qua MoMo, ZaloPay hoặc chuyển khoản VietQR</strong>: trả xong là VIP tự bật sau vài giây khi hệ thống xác nhận — không cần gửi ảnh biên lai cho ai cả.</p>
     <p class="moTa chiPlay">VIP giúp bạn tìm quanh đây <strong>không giới hạn số hồ sơ</strong>, bán kính tới <strong>20 km</strong>, nhắn tin được cho người lạ và được <strong>ưu tiên hiển thị</strong> trong kết quả tìm của người khác. Trạng thái VIP gắn theo tài khoản của bạn và hiển thị ở dòng phía trên — quyền lợi đã có vẫn giữ nguyên khi bạn dùng bản app này.</p>
     <div id="dsGoiVip" class="dsGoiVip"></div>
+
+    <!-- ===== PLAY BILLING: mua VIP qua Google Play (chỉ bản app CH Play) =====
+         Class chiPlay = chỉ hiện ở chế độ app; script.js kiểm tra thêm Digital
+         Goods API rồi mới gỡ class anPlay — thiếu API thì khối ẩn êm. -->
+    <div id="panelPlayBilling" class="panelThanhToan chiPlay anPlay">
+      <h3 class="tieuDeCon">🛒 Mua VIP qua Google Play</h3>
+      <p class="moTa">Thanh toán bằng tài khoản Google của bạn. Gói thuê bao tự gia hạn qua Google Play — hủy bất cứ lúc nào trong CH Play &gt; Đăng ký. Giá hiển thị đúng theo khu vực của bạn.</p>
+      <div id="dsGoiPlay" class="dsGoiVip"></div>
+      <p class="moTa" id="playTrangThai"></p>
+      <button type="button" id="btnKhoiPhucPlay" class="nutPhu">↩️ Khôi phục giao dịch</button>
+    </div>
 
     <div id="panelChoThanhToan" class="panelThanhToan an">
       <h3 class="tieuDeCon">⏳ Đang chờ thanh toán</h3>
